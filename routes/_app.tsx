@@ -10,7 +10,7 @@ export default function App({ Component }: PageProps) {
         <title>google map fresh example</title>
         <link rel="stylesheet" href="/styles.css" />
         <script
-          src={`https://maps.googleapis.com/maps/api/js?key=${API_KEY}`}
+          src={`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=marker`}
         >
         </script>
       </head>
