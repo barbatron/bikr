@@ -18,7 +18,9 @@ const world = new TestWorld([
 ].map(([lng, lat]) => [lat, lng]));
 
 const speeds = [0, 2, 5, 7, 10, 10, 10, 4, 2, -1];
-const speedStream = interval(1000).pipe(map((i) => speeds[i % speeds.length]));
+const speedStream = interval(2000).pipe(
+  map((i) => speeds[i % speeds.length]),
+);
 
 const roundTo = (num: number, places: number) =>
   Math.round(num * 10 ** places) / 10 ** places;
@@ -26,11 +28,6 @@ const roundTo = (num: number, places: number) =>
 const roundPosition = (
   [lat, lng]: LatLong,
 ) => [roundTo(lat, 6), roundTo(lng, 6)];
-
-interface Timestaped<T> {
-  value: T;
-  timestamp: Date;
-}
 
 export const trip = speedStream
   .pipe(
@@ -55,7 +52,7 @@ export const trip = speedStream
       timeDelta,
       distance: roundTo(distance, 2),
     });
-    console.log("world takes it from her");
+    console.log("world takes it from here:");
     world
       .handleMovement({ presence: presence.value, movement })
       .then((result) => {

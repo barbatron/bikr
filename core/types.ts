@@ -14,3 +14,5 @@ export type Presence<
 export type Movement = DistanceMeters & Heading;
 
 export type TurnOptions = Array<AngleDegrees>;
+
+export { google } from "npm:@types/google.maps@^3.58.1";
