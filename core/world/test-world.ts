@@ -8,7 +8,7 @@ export class TestWorld implements World {
   constructor(public readonly bounds: Readonly<WorldBounds>) {}
 
   async handleMovement(
-    movementRequest: MovementRequest
+    movementRequest: MovementRequest,
   ): Promise<MovementResult> {
     const { presence, movement } = movementRequest;
     const { meters } = movement;
@@ -20,13 +20,13 @@ export class TestWorld implements World {
     const newPosition = computeDestinationPoint(
       { lat, lon },
       movement.meters,
-      headingDegrees
+      headingDegrees,
     );
 
     if (
       isPointInPolygon(
         newPosition,
-        this.bounds.map(([lat, lon]) => ({ lat, lon }))
+        this.bounds.map(([lat, lon]) => ({ lat, lon })),
       )
     ) {
       console.log("Is within bounds");

@@ -70,4 +70,4 @@ export const trip = speedStream
 
 presence.subscribe((presence) => {
   console.log("[presence]", presence);
-})
+});

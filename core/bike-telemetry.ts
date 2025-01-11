@@ -29,12 +29,12 @@ client.on("error", (err) => {
 const messageSource = new Subject<[string, Buffer]>();
 client.on(
   "message",
-  (topic, message) => void messageSource.next([topic, message])
+  (topic, message) => void messageSource.next([topic, message]),
 );
 
 export const speedStream = messageSource.pipe(
   filter(([topic]) => topic === speedTopic),
-  map(([_, message]) => parseFloat(message.toString()))
+  map(([_, message]) => parseFloat(message.toString())),
 );
 
 // messageSource.subscribe((args) => {

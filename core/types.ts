@@ -8,7 +8,7 @@ export type Position<T = LatLong> = { position: T };
 
 export type Presence<
   TCoords = LatLong,
-  TDirection = AngleDegrees
+  TDirection = AngleDegrees,
 > = Position<TCoords> & Heading<TDirection>;
 
 export type Movement = DistanceMeters & Heading;
