@@ -28,11 +28,10 @@ export type TurnOptions = Array<AngleDegrees>;
 //     apiKey: Deno.env.get("GOOGLE_MAP_API_KEY")!,
 //     version: "weekly",
 //   });
-//   const [maps, marker, streetView] = await Promise.all([ 
+//   const [maps, marker, streetView] = await Promise.all([
 //     loader.importLibrary("maps"),
 //     loader.importLibrary("marker"),
 //     loader.importLibrary("streetView")
 //   ]);
 //   return { maps, marker, streetView };
 // }
-  

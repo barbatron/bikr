@@ -81,14 +81,5 @@ export default function GoogleMap(
     setSelfMarker(selfMarker);
   }, [selfMarker, tripPosLatLng]);
 
-  // // Center map on marker
-  // useEffect(() => {
-  //   if (!map) return;
-  //   if (selfMarker?.position) {
-  //     console.log('centering map on marker');
-  //     map.setCenter(selfMarker.position);
-  //   }
-  // }, [selfMarker, map])
-
-  return <div style={{ width: "100%", height: "100vh" }} ref={ref} id="map" ></div>;
+  return <div style={{ width: "100%", height: "100vh" }} ref={ref} id="map" >{selfMarker}</div>;
 }

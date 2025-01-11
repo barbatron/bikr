@@ -5,5 +5,5 @@ export default defineConfig({
   plugins: [tailwind()],
   server: {
     port: 3001,
-  }
+  },
 });
