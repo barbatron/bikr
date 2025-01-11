@@ -9,10 +9,12 @@ export default function App({ Component }: PageProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>google map fresh example</title>
         <link rel="stylesheet" href="/styles.css" />
-        {/* <script
+        {
+          /* <script
           src={`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=maps,marker,streetView`}
         >
-        </script> */}
+        </script> */
+        }
       </head>
       <body>
         <Component />
