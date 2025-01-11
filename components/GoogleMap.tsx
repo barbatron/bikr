@@ -14,7 +14,15 @@ export type GoogleMapProps = {
   marker?: LatLong;
 };
 
-let ctx: any = null;
+// function SelfMarker(props: { latLong: google.maps.LatLng | null, map: google.maps.Map }) { 
+//   const googleMaps = useContext(googleMapsContext)!;
+//   const marker = useMemo(() => new googleMaps.marker.AdvancedMarkerElement({
+//     map: props.map,
+//     title: "Presence",
+//   }), [props.map]);
+//   if (props.latLong) marker.position = props.latLong;
+//   return <>{marker}</>;
+// }
 
 export default function GoogleMap(
   {
@@ -29,13 +37,11 @@ export default function GoogleMap(
   if (!googleMaps) {
     return <p>Loading Google Maps...</p>;
   }
-
+  
   const trip = useObservable(presence);
   const [map, setMap] = useState<null | google.maps.Map>(null);
-  const [selfMarker, setSelfMarker] = useState<
-    null | google.maps.marker.AdvancedMarkerElement
-  >(null);
-
+  const [selfMarker, setSelfMarker] = useState<null | google.maps.marker.AdvancedMarkerElement>(null);
+  
   const ref = useRef<HTMLDivElement | null>(null);
   const tripPosLatLng = useMemo(
     () =>
@@ -57,44 +63,34 @@ export default function GoogleMap(
         zoom: zoomLevel,
         mapId,
       });
-
       setMap(newMap);
-      if (!selfMarker) {
-        const newMarker = new googleMaps.marker.AdvancedMarkerElement({
-          map,
-          title: "You",
-        });
-        console.log("Created marker");
-        setSelfMarker(newMarker);
-      }
     }
   }, [ref.current]);
 
-  // Init things on map
   useEffect(() => {
-    if (!map || !trip) return;
-
-    if (!selfMarker) {
-      const newMarker = new googleMaps.marker.AdvancedMarkerElement({
-        map,
-        title: "You",
-      });
-      console.log("Created marker");
-      setSelfMarker(newMarker);
-    }
-  }, [map, selfMarker]);
+    if (!map) return;
+    const newSelfMarker = new googleMaps.marker.AdvancedMarkerElement({
+      map,
+      title: "Presence",
+    });
+    newSelfMarker.id="selfMarker";
+    setSelfMarker(newSelfMarker);
+  }, [map]);
 
   // Update marker position
   useEffect(() => {
     if (!selfMarker || !tripPosLatLng) return;
+    
+    // Update self marker position
     console.log("Setting marker position", tripPosLatLng.toString());
-    selfMarker.position = tripPosLatLng;
+    selfMarker.position=tripPosLatLng;
+    
     // Center map on marker
-    if (map) map.setCenter(tripPosLatLng);
-    setSelfMarker(selfMarker);
-  }, [selfMarker, tripPosLatLng]);
-
+    map?.panTo(tripPosLatLng);
+  }, [selfMarker, tripPosLatLng, map]);
+  
   return (
-    <div style={{ width: "100%", height: "100vh" }} ref={ref} id="map"></div>
+    <div style={{ width: "100%", height: "100vh" }} ref={ref} id="map">
+    </div>
   );
 }

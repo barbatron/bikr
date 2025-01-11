@@ -27,7 +27,7 @@ function GoogleMapsProvider(
           if (!googleMaps) setGoogleMaps(google.maps);
         }}
         src={`https://maps.googleapis.com/maps/api/js?key=${props.apiKey}&libraries=maps,marker,streetView`}
-        integrity="sha256-XIu4I5cCy8z6GxBYv6ea58vGyKTcKkr11l+9LO6foBw="
+        // integrity="sha256-XIu4I5cCy8z6GxBYv6ea58vGyKTcKkr11l+9LO6foBw="
         crossorigin=""
       />
       {/* Provide context to children */}

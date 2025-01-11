@@ -15,7 +15,7 @@
   "imports": {
     "$fresh/": "https://deno.land/x/fresh@1.6.8/",
     "$std/": "https://deno.land/std@0.216.0/",
-    "@googlemaps/js-api-loader": "npm:@googlemaps/js-api-loader@^1.16.8",
+    "@googlemaps/markermanager": "npm:@googlemaps/markermanager@^1.0.29",
     "@preact/signals": "https://esm.sh/*@preact/signals@1.2.2",
     "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.1",
     "@types/google.maps": "npm:@types/google.maps@3.58.1",
