@@ -5,7 +5,6 @@
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
 import * as $index from "./routes/index.tsx";
-import * as $GoogleMap from "./islands/GoogleMap.tsx";
 import * as $GoogleMapIsland from "./islands/GoogleMapIsland.tsx";
 import * as $useObservable from "./islands/useObservable.ts";
 import { type Manifest } from "$fresh/server.ts";
@@ -17,7 +16,6 @@ const manifest = {
     "./routes/index.tsx": $index,
   },
   islands: {
-    "./islands/GoogleMap.tsx": $GoogleMap,
     "./islands/GoogleMapIsland.tsx": $GoogleMapIsland,
     "./islands/useObservable.ts": $useObservable,
   },

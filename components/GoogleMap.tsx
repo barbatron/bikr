@@ -1,11 +1,12 @@
 // @deno-types="npm:@types/google.maps"
 // import * as google from "npm:@types/google.maps";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { LatLong, loadGoogleMaps } from "../core/types.ts";
-import { useObservable } from "./useObservable.ts";
+import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { LatLong } from "../core/types.ts";
+import { useObservable } from "../islands/useObservable.ts";
 import { presence } from "../core/session-main.ts";
+import { googleMapsContext } from "../islands/GoogleMapIsland.tsx";
 
-type GoogleMapProps = {
+export type GoogleMapProps = {
   mapId: string;
   lat: number; 
   lng: number; 
@@ -20,6 +21,10 @@ export default function GoogleMap(
     zoomLevel,
   }: GoogleMapProps
 ) {
+  const googleMaps = useContext(googleMapsContext);
+  if (!googleMaps) {
+    return <p>Loading Google Maps...</p>;
+  }
   // const google = globalThis.google as google.maps.MapsLibrary;
   // useEffect(() => {
   //   loadGoogleMaps().then(setGoogle);
@@ -31,13 +36,13 @@ export default function GoogleMap(
   console.log("GoogleMap trip", trip);
 
   const ref = useRef<HTMLDivElement | null>(null);
-  const tripPosLatLng = useMemo(() => trip?.position ? new google.maps.LatLng({ lat: trip.position[0], lng: trip.position[1] }) : null, [trip?.position[0], trip?.position[1]]);
+  const tripPosLatLng = useMemo(() => trip?.position ? new googleMaps.LatLng({ lat: trip.position[0], lng: trip.position[1] }) : null, [trip?.position[0], trip?.position[1]]);
 
   useEffect(() => {
     if (ref.current) {
       console.log(ref.current);
 
-      const newMap = new google.maps.Map(ref.current, {
+      const newMap = new googleMaps.Map(ref.current, {
         center: { lat, lng },
         zoom: zoomLevel,
         mapId,
@@ -52,7 +57,7 @@ export default function GoogleMap(
     if (!map || !trip) return;
     
     if (!selfMarker) {
-      const newMarker = new google.maps.marker.AdvancedMarkerElement({
+      const newMarker = new googleMaps.marker.AdvancedMarkerElement({
         map,
         title: "You"
       });

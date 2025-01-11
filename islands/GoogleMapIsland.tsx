@@ -1,12 +1,13 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
-import { createContext, h, ComponentChildren } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { ComponentChildren, createContext } from "preact";
+import { useState } from "preact/hooks";
+import GoogleMap, { GoogleMapProps } from "../components/GoogleMap.tsx";
 
 export type MapsLibs = typeof google.maps
 
 export const googleMapsContext = createContext<MapsLibs | null>(null);
 
-function GoogleMapsProvider(props: { children: ComponentChildren }) {
+function GoogleMapsProvider(props: { children: ComponentChildren, apiKey: string }) {
   if (!IS_BROWSER) {
     return (
       <p>Google Maps must be loaded on the client. No children will render</p>
@@ -19,7 +20,7 @@ function GoogleMapsProvider(props: { children: ComponentChildren }) {
       {/* Load Leaflet JS */}
       <script
         onLoad={(x) => setGoogleMaps(google.maps)}
-        src={`https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=maps,marker,streetView`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${props.apiKey}&libraries=maps,marker,streetView`}
         // integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""
       />
@@ -28,5 +29,13 @@ function GoogleMapsProvider(props: { children: ComponentChildren }) {
         {props.children}
       </googleMapsContext.Provider>
     </>
+  );
+}
+
+export default function MapIsland(props: GoogleMapProps & { apiKey: string }) {
+  return (
+    <GoogleMapsProvider apiKey={props.apiKey}>
+      <GoogleMap {...props} />
+    </GoogleMapsProvider>
   );
 }
