@@ -1,5 +1,5 @@
 import { computeDestinationPoint, isPointInPolygon } from "geolib";
-import { LatLong, Movement } from "../types.ts";
+import { LatLong, Movement, TurnOptions } from "../types.ts";
 import { MovementRequest, MovementResult, World } from "./world.ts";
 
 type WorldBounds = LatLong[];
@@ -7,7 +7,7 @@ type WorldBounds = LatLong[];
 export class TestWorld implements World {
   constructor(public readonly bounds: Readonly<WorldBounds>) {}
 
-  async handleMovement(
+  handleMovement(
     movementRequest: MovementRequest,
   ): Promise<MovementResult> {
     const { presence, movement } = movementRequest;
@@ -32,6 +32,7 @@ export class TestWorld implements World {
       console.log("Is within bounds");
     } else {
       console.warn("Is outside bounds");
+      return Promise.resolve(null);
     }
 
     const newPositionLatLong: LatLong = [
@@ -42,12 +43,15 @@ export class TestWorld implements World {
       position: newPositionLatLong,
       heading: { degrees: headingDegrees },
     };
-    // TODO: handle bounds
     const movementActual: Movement = {
       meters,
       heading: { degrees: headingDegrees },
     };
-    const turnOptions = [];
-    return { movementActual, presence: newPresence, turnOptions };
+    const turnOptions: TurnOptions = [];
+    return Promise.resolve({
+      movementActual,
+      presence: newPresence,
+      turnOptions,
+    });
   }
 }

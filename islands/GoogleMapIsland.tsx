@@ -1,7 +1,9 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { ComponentChildren, createContext } from "preact";
-import { useState } from "preact/hooks";
+import { useContext, useState } from "preact/hooks";
 import GoogleMap, { GoogleMapProps } from "../components/GoogleMap.tsx";
+import { worldSource } from "../core/session-main.ts";
+import { StreetViewWorld } from "../core/world/streetview-world.ts";
 
 export type MapsLibs = typeof google.maps;
 
@@ -24,6 +26,9 @@ function GoogleMapsProvider(
         onLoad={() => {
           console.log("Loaded script");
           if (!googleMaps) setGoogleMaps(google.maps);
+          worldSource.next(
+            new StreetViewWorld(new google.maps.StreetViewService()),
+          );
         }}
         src={`https://maps.googleapis.com/maps/api/js?key=${props.apiKey}&libraries=maps,marker,streetView`}
         crossorigin=""

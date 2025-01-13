@@ -60,7 +60,10 @@ export default function GoogleMap(
         // @ts-ignore
         (acc, link) => {
           if (link?.heading) {
-            const diffSqr = Math.pow(link.heading - tripDirection, 2);
+            const diffSqr = Math.pow(
+              link.heading - (trip?.heading.degrees ?? startDirection),
+              2,
+            );
             if (!acc.minDiff || diffSqr < acc.minDiff) {
               return { minDiff: diffSqr, link };
             }

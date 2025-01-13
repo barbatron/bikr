@@ -17,7 +17,7 @@ export type MovementResult = {
   movementActual: Movement;
   presence: Presence;
   turnOptions: TurnOptions;
-};
+} | null;
 
 export interface World {
   handleMovement: (movementRequest: MovementRequest) => Promise<MovementResult>;
