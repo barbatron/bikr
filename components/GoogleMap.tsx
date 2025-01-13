@@ -37,7 +37,7 @@ export default function GoogleMap(
           lat: trip.position[0],
           lng: trip.position[1],
         })
-        : null,
+        : new googleMaps.LatLng({ lat, lng }),
     [trip?.position[0], trip?.position[1]],
   );
 
@@ -45,12 +45,40 @@ export default function GoogleMap(
   const panoRef = useRef<HTMLDivElement | null>(null);
 
   const [map, setMap] = useState<null | google.maps.Map>(null);
-  const [panorama, setPanorama] = useState<
-    null | google.maps.StreetViewPanorama
+  // const [selfMarker, setSelfMarker] = useState<
+  //   null | google.maps.marker.AdvancedMarkerElement
+  // >(null);
+
+  const [panoLinks, setPanoLinks] = useState<
+    (google.maps.StreetViewLink | null)[] | null
   >(null);
-  const [selfMarker, setSelfMarker] = useState<
-    null | google.maps.marker.AdvancedMarkerElement
-  >(null);
+
+  const tripDirection = useMemo(() => {
+    if (panoLinks) {
+      // Find link with heading value closest to trip.heading.degrees:
+      const newHeading = panoLinks?.reduce(
+        // @ts-ignore
+        (acc, link) => {
+          if (link?.heading) {
+            const diffSqr = Math.pow(link.heading - tripDirection, 2);
+            if (!acc.minDiff || diffSqr < acc.minDiff) {
+              return { minDiff: diffSqr, link };
+            }
+          }
+          return acc;
+        },
+        { minDiff: Infinity, link: null } as {
+          minDiff: number;
+          link: google.maps.StreetViewLink | null;
+        },
+      );
+      console.log("New heading!", newHeading?.link?.heading);
+    }
+    return trip?.heading.degrees ?? startDirection;
+  }, [
+    trip?.heading.degrees ?? startDirection,
+    panoLinks,
+  ]);
 
   // Map initialization
   useEffect(() => {
@@ -64,10 +92,22 @@ export default function GoogleMap(
     setMap(newMap);
   }, [mapRef.current]);
 
+  function handleNewLinks(this: google.maps.StreetViewPanorama) {
+    // const gmap = map as google.maps.Map | null;
+    // if (!gmap) return;
+    // console.log("handleNewLinks", { thisIs: this, gmap });
+    const links = this.getLinks();
+    console.log("Got new links", {
+      headings: links?.map((l) => l?.heading),
+      currentHeading: this.getPov().heading,
+    });
+    setPanoLinks(links);
+  }
+
   // Street view panorama initialization
   useEffect(() => {
     if (!map || !panoRef.current) return;
-    if (!trip?.heading.degrees) return;
+    if (!tripDirection) return;
     const settings = {
       position: { lat, lng },
       pov: {
@@ -83,39 +123,40 @@ export default function GoogleMap(
       panoRef.current,
       settings,
     );
-    setPanorama(newPanorama);
+    map.setStreetView(newPanorama);
+    const events = newPanorama.addListener("links_changed", handleNewLinks);
+    return () => {
+      console.log("Unsubbing from links_changed");
+      events.remove();
+    };
   }, [map, panoRef.current, startDirection, trip?.heading.degrees]);
 
-  useEffect(() => {
-    if (!panorama || !map) return;
-    map.setStreetView(panorama);
-  }, [panorama, map]);
-
-  useEffect(() => {
-    if (!map) return;
-    const newSelfMarker = new googleMaps.marker.AdvancedMarkerElement({
-      map,
-      title: "Presence",
-    });
-    newSelfMarker.id = "selfMarker";
-    setSelfMarker(newSelfMarker);
-  }, [map]);
+  // useEffect(() => {
+  //   if (!map) return;
+  //   const newSelfMarker = new googleMaps.marker.AdvancedMarkerElement({
+  //     map,
+  //     title: "Presence",
+  //   });
+  //   newSelfMarker.id = "selfMarker";
+  //   setSelfMarker(newSelfMarker);
+  // }, [map]);
 
   // Update marker position
   useEffect(() => {
-    if (!selfMarker || !tripPosLatLng) return;
+    // if (!selfMarker || !tripPosLatLng) return;
 
     // Update self marker position
-    console.log("Setting marker position", tripPosLatLng.toString());
-    selfMarker.position = tripPosLatLng;
+    // console.log("Setting marker position", tripPosLatLng.toString());
+    // selfMarker.position = tripPosLatLng;
 
     // Center map on marker
     map?.panTo(tripPosLatLng);
 
     // Update panorama
+    const panorama = map?.getStreetView();
     panorama?.setPosition(tripPosLatLng);
-    panorama?.setPov(trip?.heading.degrees ?? startDirection);
-  }, [selfMarker, tripPosLatLng, map]);
+    panorama?.setPov(tripDirection);
+  }, [tripPosLatLng, tripDirection, map]);
 
   return (
     <>
