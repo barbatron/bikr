@@ -54,29 +54,29 @@ export default function GoogleMap(
   >(null);
 
   const tripDirection = useMemo(() => {
-    if (panoLinks) {
-      // Find link with heading value closest to trip.heading.degrees:
-      const newHeading = panoLinks?.reduce(
-        // @ts-ignore
-        (acc, link) => {
-          if (link?.heading) {
-            const diffSqr = Math.pow(
-              link.heading - (trip?.heading.degrees ?? startDirection),
-              2,
-            );
-            if (!acc.minDiff || diffSqr < acc.minDiff) {
-              return { minDiff: diffSqr, link };
-            }
-          }
-          return acc;
-        },
-        { minDiff: Infinity, link: null } as {
-          minDiff: number;
-          link: google.maps.StreetViewLink | null;
-        },
-      );
-      console.log("New heading!", newHeading?.link?.heading);
-    }
+    // if (panoLinks) {
+    //   // Find link with heading value closest to trip.heading.degrees:
+    //   const newHeading = panoLinks?.reduce(
+    //     // @ts-ignore
+    //     (acc, link) => {
+    //       if (link?.heading) {
+    //         const diffSqr = Math.pow(
+    //           link.heading - (trip?.heading.degrees ?? startDirection),
+    //           2,
+    //         );
+    //         if (!acc.minDiff || diffSqr < acc.minDiff) {
+    //           return { minDiff: diffSqr, link };
+    //         }
+    //       }
+    //       return acc;
+    //     },
+    //     { minDiff: Infinity, link: null } as {
+    //       minDiff: number;
+    //       link: google.maps.StreetViewLink | null;
+    //     },
+    //   );
+    //   console.log("New heading!", newHeading?.link?.heading);
+    // }
     return trip?.heading.degrees ?? startDirection;
   }, [
     trip?.heading.degrees ?? startDirection,

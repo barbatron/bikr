@@ -30,6 +30,7 @@ const roundPosition = (
   [lat, lng]: LatLong,
 ) => [roundTo(lat, 6), roundTo(lng, 6)];
 export const worldSource = new BehaviorSubject<World | null>(null);
+export const directionSource = new BehaviorSubject<number>(startDirection);
 
 export const trip = speedStream
   .pipe(
@@ -38,17 +39,17 @@ export const trip = speedStream
     // Provide last + previous speed/timestamp tuple to get deltas
     pairwise(),
     // take(speeds.length - 1),
-    combineLatestWith(worldSource),
+    combineLatestWith(worldSource, directionSource),
   )
-  .subscribe(([[prev, next], world]) => {
-    console.log("[trip] speed", { prev, next });
+  .subscribe(([[prev, next], world, direction]) => {
+    console.log("[trip] update", { speed: { prev, next }, direction });
     const avgSpeedMetersPerSecond = next.speed;
     const timeDeltaMillis = next.timestamp.getTime() - prev.timestamp.getTime();
     const timeDelta = timeDeltaMillis / 1000;
     const distance = avgSpeedMetersPerSecond * timeDelta;
     const movement: Movement = {
       meters: roundTo(distance, 2),
-      heading: { degrees: startDirection },
+      heading: { degrees: direction },
     };
     console.log("[trip]", {
       avgSpeed: avgSpeedMetersPerSecond,
