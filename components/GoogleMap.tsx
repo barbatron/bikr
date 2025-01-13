@@ -1,34 +1,25 @@
 // @deno-types="npm:@types/google.maps"
-// import * as google from "npm:@types/google.maps";
 import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { presence } from "../core/session-main.ts";
 import { LatLong } from "../core/types.ts";
 import { useObservable } from "../hooks/useObservable.ts";
-import { presence } from "../core/session-main.ts";
 import { googleMapsContext } from "../islands/GoogleMapIsland.tsx";
 
 export type GoogleMapProps = {
   mapId: string;
   lat: number;
   lng: number;
+  startDirection: number;
   zoomLevel: number;
   marker?: LatLong;
 };
-
-// function SelfMarker(props: { latLong: google.maps.LatLng | null, map: google.maps.Map }) { 
-//   const googleMaps = useContext(googleMapsContext)!;
-//   const marker = useMemo(() => new googleMaps.marker.AdvancedMarkerElement({
-//     map: props.map,
-//     title: "Presence",
-//   }), [props.map]);
-//   if (props.latLong) marker.position = props.latLong;
-//   return <>{marker}</>;
-// }
 
 export default function GoogleMap(
   {
     mapId,
     lat,
     lng,
+    startDirection,
     zoomLevel,
   }: GoogleMapProps,
 ) {
@@ -37,12 +28,8 @@ export default function GoogleMap(
   if (!googleMaps) {
     return <p>Loading Google Maps...</p>;
   }
-  
+
   const trip = useObservable(presence);
-  const [map, setMap] = useState<null | google.maps.Map>(null);
-  const [selfMarker, setSelfMarker] = useState<null | google.maps.marker.AdvancedMarkerElement>(null);
-  
-  const ref = useRef<HTMLDivElement | null>(null);
   const tripPosLatLng = useMemo(
     () =>
       trip?.position
@@ -54,18 +41,55 @@ export default function GoogleMap(
     [trip?.position[0], trip?.position[1]],
   );
 
-  useEffect(() => {
-    if (ref.current) {
-      console.log(ref.current);
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const panoRef = useRef<HTMLDivElement | null>(null);
 
-      const newMap = new googleMaps.Map(ref.current, {
-        center: { lat, lng },
-        zoom: zoomLevel,
-        mapId,
-      });
-      setMap(newMap);
-    }
-  }, [ref.current]);
+  const [map, setMap] = useState<null | google.maps.Map>(null);
+  const [panorama, setPanorama] = useState<
+    null | google.maps.StreetViewPanorama
+  >(null);
+  const [selfMarker, setSelfMarker] = useState<
+    null | google.maps.marker.AdvancedMarkerElement
+  >(null);
+
+  // Map initialization
+  useEffect(() => {
+    if (!mapRef.current) return;
+    console.log("Got mapref", mapRef.current);
+    const newMap = new googleMaps.Map(mapRef.current, {
+      center: { lat, lng },
+      zoom: zoomLevel,
+      mapId,
+    });
+    setMap(newMap);
+  }, [mapRef.current]);
+
+  // Street view panorama initialization
+  useEffect(() => {
+    if (!map || !panoRef.current) return;
+    if (!trip?.heading.degrees) return;
+    const settings = {
+      position: { lat, lng },
+      pov: {
+        heading: trip?.heading.degrees ?? startDirection,
+        pitch: 10,
+      },
+    };
+    console.log("Creating panorama", {
+      panoRef: panoRef.current,
+      settings,
+    });
+    const newPanorama = new google.maps.StreetViewPanorama(
+      panoRef.current,
+      settings,
+    );
+    setPanorama(newPanorama);
+  }, [map, panoRef.current, startDirection, trip?.heading.degrees]);
+
+  useEffect(() => {
+    if (!panorama || !map) return;
+    map.setStreetView(panorama);
+  }, [panorama, map]);
 
   useEffect(() => {
     if (!map) return;
@@ -73,24 +97,38 @@ export default function GoogleMap(
       map,
       title: "Presence",
     });
-    newSelfMarker.id="selfMarker";
+    newSelfMarker.id = "selfMarker";
     setSelfMarker(newSelfMarker);
   }, [map]);
 
   // Update marker position
   useEffect(() => {
     if (!selfMarker || !tripPosLatLng) return;
-    
+
     // Update self marker position
     console.log("Setting marker position", tripPosLatLng.toString());
-    selfMarker.position=tripPosLatLng;
-    
+    selfMarker.position = tripPosLatLng;
+
     // Center map on marker
     map?.panTo(tripPosLatLng);
+
+    // Update panorama
+    panorama?.setPosition(tripPosLatLng);
+    panorama?.setPov(trip?.heading.degrees ?? startDirection);
   }, [selfMarker, tripPosLatLng, map]);
-  
+
   return (
-    <div style={{ width: "100%", height: "100vh" }} ref={ref} id="map">
-    </div>
+    <>
+      <div
+        style={{ float: "left", height: "100vh", width: "50%" }}
+        ref={mapRef}
+        id="map"
+      />
+      <div
+        style={{ float: "left", height: "100vh", width: "50%" }}
+        ref={panoRef}
+        id="pano"
+      />
+    </>
   );
 }
