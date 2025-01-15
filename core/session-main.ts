@@ -7,6 +7,7 @@ import { World } from "./world/world.ts";
 import { roundPosition, roundTo } from "./utils.ts";
 import { signal } from "npm:@preact/signals-core";
 import { speedStream } from "./bike-telemetry.ts";
+import { throttle } from "rxjs";
 
 export const startPosition: LatLong = [59.292455, 18.1195134];
 export const startDirection = 67.82;
@@ -37,6 +38,7 @@ export const streetViewLinks = signal<google.maps.StreetViewLink[]>([]);
 
 export const trip = speedStream
   .pipe(
+    throttle(() => interval(1000)),
     // Attach timestamps
     map((speed) => ({ speed, timestamp: new Date() })),
     // Provide last + previous speed/timestamp tuple to get deltas
@@ -54,16 +56,15 @@ export const trip = speedStream
       meters: roundTo(distance, 2),
       heading: { degrees: direction },
     };
-    console.log("[trip]", {
+    console.log("[trip] calculated speed/timedelta/distance", {
       avgSpeed: avgSpeedMetersPerSecond,
       timeDelta,
       distance: roundTo(distance, 2),
     });
     if (!world) {
-      console.warn("No world - no movement (smh)");
+      console.warn("[trip] No world - no movement, smh");
       return;
     }
-    console.log("world takes it from here:");
     world
       .handleMovement({ presence: presence.value, movement })
       .then((result) => {
