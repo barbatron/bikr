@@ -1,6 +1,6 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { ComponentChildren, createContext } from "preact";
-import { useContext, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import GoogleMap, { GoogleMapProps } from "../components/GoogleMap.tsx";
 import { worldSource } from "../core/session-main.ts";
 import { StreetViewWorld } from "../core/world/streetview-world.ts";

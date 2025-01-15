@@ -1,6 +1,6 @@
 // @deno-types="npm:@types/google.maps"
 import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { presence } from "../core/session-main.ts";
+import { presence, streetViewLinks } from "../core/session-main.ts";
 import { LatLong } from "../core/types.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 import { googleMapsContext } from "../islands/GoogleMapIsland.tsx";
@@ -46,10 +46,6 @@ export default function GoogleMap(
 
   const [map, setMap] = useState<null | google.maps.Map>(null);
 
-  const [panoLinks, setPanoLinks] = useState<
-    (google.maps.StreetViewLink | null)[] | null
-  >(null);
-
   const tripDirection = useMemo(() => trip?.heading.degrees ?? startDirection, [
     trip?.heading.degrees ?? startDirection,
   ]);
@@ -63,6 +59,7 @@ export default function GoogleMap(
       heading: startDirection,
       zoom: zoomLevel,
       mapId,
+      colorScheme: google.maps.ColorScheme.DARK,
     });
     setMap(newMap);
   }, [mapRef.current]);
@@ -76,7 +73,9 @@ export default function GoogleMap(
       headings: links?.map((l) => l?.heading),
       currentHeading: this.getPov().heading,
     });
-    setPanoLinks(links);
+    streetViewLinks.value = (links ?? []).filter((l) => !!l && l !== null).map(
+      (l) => l as google.maps.StreetViewLink,
+    );
   }
 
   // Street view panorama initialization

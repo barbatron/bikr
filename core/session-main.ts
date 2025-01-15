@@ -5,10 +5,15 @@ import { createPresence } from "./session.ts";
 import { LatLong, Movement } from "./types.ts";
 import { World } from "./world/world.ts";
 import { roundPosition, roundTo } from "./utils.ts";
+import { signal } from "npm:@preact/signals-core";
 
-// https://www.google.com/maps/place/59%C2%B015'19.6%22N+18%C2%B004'53.1%22E/@59.2554025,18.0814542,17z/data=!4m4!3m3!8m2!3d59.25543!4d18.081405!5m1!1e4?entry=ttu&g_ep=EgoyMDI0MTIxMS4wIKXMDSoASAFQAw%3D%3D
-export const startPosition: LatLong = [59.25525829440903, 18.08159134326138];
-export const startDirection = 345;
+export const startPosition: LatLong = [59.292455, 18.1195134];
+export const startDirection = 67.82;
+
+export const bikeRoute = signal({
+  routeStart: { lat: 59.261776, lng: 18.130394 },
+  routeEnd: "Tyresö Centrum, 135 40 Tyresö",
+});
 
 export const presence = createPresence(startPosition, startDirection);
 // const world = new TestWorld([
@@ -26,6 +31,8 @@ const speedStream = interval(2000).pipe(
 
 export const worldSource = new BehaviorSubject<World | null>(null);
 export const directionSource = new BehaviorSubject<number>(startDirection);
+
+export const streetViewLinks = signal<google.maps.StreetViewLink[]>([]);
 
 export const trip = speedStream
   .pipe(
