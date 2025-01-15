@@ -1,6 +1,6 @@
 // @deno-types="npm:@types/google.maps"
 import { computeDestinationPoint, getDistance } from "geolib";
-import { Movement } from "../types.ts";
+import { LatLong, Movement } from "../types.ts";
 import { MovementRequest, MovementResult, World } from "./world.ts";
 
 export class StreetViewWorld implements World {
@@ -15,19 +15,20 @@ export class StreetViewWorld implements World {
     const { presence, movement } = movementRequest;
     console.log("[sv] handleMovement", { presence, movement });
     const headingDegrees = movementRequest.movement.heading.degrees;
-    const [lat, lon] = presence.position;
+    const [currentLat, currentLon] = presence.position;
 
-    const { data }: google.maps.StreetViewResponse = await this.sv.getPanorama({
-      location: {
-        lat,
-        lng: lon,
-      },
-      radius: this.searchRadius,
-    });
+    const { data }: { data: google.maps.StreetViewPanoramaData } = await this.sv
+      .getPanorama({
+        location: {
+          lat: currentLat,
+          lng: currentLon,
+        },
+        radius: this.searchRadius,
+      });
 
     const createObeyingMovementResult = (): MovementResult => {
       const proposedPosition = computeDestinationPoint(
-        { lat, lon },
+        { currentLat, currentLon },
         movement.meters,
         headingDegrees,
       );
@@ -86,23 +87,28 @@ export class StreetViewWorld implements World {
     );
 
     const newHeading = newHeadingResult.link.heading;
-    const newPosition = computeDestinationPoint(
-      { lat, lon },
-      movement.meters,
-      newHeading,
-    );
+    const newPosition: { latitude: number; longitude: number } =
+      computeDestinationPoint(
+        { latitude: currentLat, longitude: currentLon },
+        movement.meters,
+        newHeading,
+      );
 
     const newPresence = {
-      position: newPosition,
-      heading: { degrees: headingDegrees },
+      position: [newPosition.latitude, newPosition.longitude] satisfies LatLong,
+      heading: { degrees: newHeading },
     };
-    const meters = getDistance({ lat, lon }, {
-      lat: newPosition[0],
-      lon: newPosition[1],
+    console.log("[sv] get distance", {
+      from: { currentLat, currentLon },
+      to: newPosition,
     });
+    const meters = getDistance(
+      { latitude: currentLat, longitude: currentLon },
+      newPosition,
+    );
     const movementActual: Movement = {
       meters,
-      heading: { degrees: headingDegrees },
+      heading: { degrees: newHeading },
     };
     return { movementActual, presence: newPresence, turnOptions: [] };
   }

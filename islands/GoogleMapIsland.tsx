@@ -9,7 +9,7 @@ export type MapsLibs = typeof google.maps;
 
 export const googleMapsContext = createContext<MapsLibs | null>(null);
 
-function GoogleMapsProvider(
+export function GoogleMapsProvider(
   props: { children: ComponentChildren; apiKey: string },
 ) {
   if (!IS_BROWSER) {
@@ -41,7 +41,9 @@ function GoogleMapsProvider(
   );
 }
 
-export default function MapIsland(props: GoogleMapProps & { apiKey: string }) {
+export default function GoogleMapIsland(
+  props: GoogleMapProps & { apiKey: string },
+) {
   return (
     <GoogleMapsProvider apiKey={props.apiKey}>
       <GoogleMap {...props} />

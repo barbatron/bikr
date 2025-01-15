@@ -30,14 +30,14 @@ export default function GoogleMap(
   }
 
   const trip = useObservable(presence);
-  const tripPosLatLng = useMemo(
+  const tripPosLatLng = useMemo<google.maps.LatLng>(
     () =>
       trip?.position
-        ? new googleMaps.LatLng({
+        ? new google.maps.LatLng({
           lat: trip.position[0],
           lng: trip.position[1],
         })
-        : new googleMaps.LatLng({ lat, lng }),
+        : new google.maps.LatLng({ lat, lng }),
     [trip?.position[0], trip?.position[1]],
   );
 
@@ -45,50 +45,22 @@ export default function GoogleMap(
   const panoRef = useRef<HTMLDivElement | null>(null);
 
   const [map, setMap] = useState<null | google.maps.Map>(null);
-  // const [selfMarker, setSelfMarker] = useState<
-  //   null | google.maps.marker.AdvancedMarkerElement
-  // >(null);
 
   const [panoLinks, setPanoLinks] = useState<
     (google.maps.StreetViewLink | null)[] | null
   >(null);
 
-  const tripDirection = useMemo(() => {
-    // if (panoLinks) {
-    //   // Find link with heading value closest to trip.heading.degrees:
-    //   const newHeading = panoLinks?.reduce(
-    //     // @ts-ignore
-    //     (acc, link) => {
-    //       if (link?.heading) {
-    //         const diffSqr = Math.pow(
-    //           link.heading - (trip?.heading.degrees ?? startDirection),
-    //           2,
-    //         );
-    //         if (!acc.minDiff || diffSqr < acc.minDiff) {
-    //           return { minDiff: diffSqr, link };
-    //         }
-    //       }
-    //       return acc;
-    //     },
-    //     { minDiff: Infinity, link: null } as {
-    //       minDiff: number;
-    //       link: google.maps.StreetViewLink | null;
-    //     },
-    //   );
-    //   console.log("New heading!", newHeading?.link?.heading);
-    // }
-    return trip?.heading.degrees ?? startDirection;
-  }, [
+  const tripDirection = useMemo(() => trip?.heading.degrees ?? startDirection, [
     trip?.heading.degrees ?? startDirection,
-    panoLinks,
   ]);
 
   // Map initialization
   useEffect(() => {
     if (!mapRef.current) return;
     console.log("Got mapref", mapRef.current);
-    const newMap = new googleMaps.Map(mapRef.current, {
+    const newMap = new google.maps.Map(mapRef.current, {
       center: { lat, lng },
+      heading: startDirection,
       zoom: zoomLevel,
       mapId,
     });
@@ -132,7 +104,7 @@ export default function GoogleMap(
       console.log("Unsubbing from links_changed");
       events.remove();
     };
-  }, [map, panoRef.current, startDirection, trip?.heading.degrees]);
+  }, [map, panoRef.current]);
 
   // useEffect(() => {
   //   if (!map) return;
@@ -153,12 +125,26 @@ export default function GoogleMap(
     // selfMarker.position = tripPosLatLng;
 
     // Center map on marker
-    map?.panTo(tripPosLatLng);
+    if (!map) return;
+    console.log("Update map+pano from position/heading", {
+      tripPosLatLng,
+      tripDirection,
+    });
+    const m = map as google.maps.Map;
+    m.panTo(tripPosLatLng);
+    m.setHeading(tripDirection);
 
     // Update panorama
-    const panorama = map?.getStreetView();
-    panorama?.setPosition(tripPosLatLng);
-    panorama?.setPov(tripDirection);
+    const panorama = m.getStreetView();
+    if (panorama) {
+      const p = panorama as google.maps.StreetViewPanorama;
+      p.setOptions({
+        position: tripPosLatLng,
+        pov: { heading: tripDirection, pitch: 0 },
+      });
+      // p.setPosition(tripPosLatLng);
+      // p.setPov({ heading: tripDirection, pitch: 0 });
+    } else console.warn("Could not set panorama position/pov");
   }, [tripPosLatLng, tripDirection, map]);
 
   return (
