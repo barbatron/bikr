@@ -9,8 +9,12 @@ import { signal } from "npm:@preact/signals-core";
 import { speedStream } from "./bike-telemetry.ts";
 import { throttle } from "rxjs";
 
-export const startPosition: LatLong = [59.292455, 18.1195134];
-export const startDirection = 67.82;
+const nackaReservSaltsjo = {
+  position: [59.2848213, 18.2077248] satisfies LatLong,
+  heading: 90,
+};
+export const startPosition = nackaReservSaltsjo.position;
+export const startDirection = nackaReservSaltsjo.heading;
 
 export const bikeRoute = signal({
   routeStart: { lat: 59.261776, lng: 18.130394 },
