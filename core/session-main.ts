@@ -6,6 +6,7 @@ import { LatLong, Movement } from "./types.ts";
 import { World } from "./world/world.ts";
 import { roundPosition, roundTo } from "./utils.ts";
 import { signal } from "npm:@preact/signals-core";
+import { speedStream } from "./bike-telemetry.ts";
 
 export const startPosition: LatLong = [59.292455, 18.1195134];
 export const startDirection = 67.82;
@@ -24,10 +25,10 @@ export const presence = createPresence(startPosition, startDirection);
 //   [18.080966137329995, 59.25573603011762],
 // ].map(([lng, lat]) => [lat, lng]));
 
-const speeds = [0.1, 2, 5, 7, 10, 10, 10, 4, 2, 0.5];
-const speedStream = interval(2000).pipe(
-  map((i) => speeds[i % speeds.length]),
-);
+// const speeds = [0.1, 2, 5, 7, 10, 10, 10, 4, 2, 0.5];
+// const speedStream = interval(2000).pipe(
+//   map((i) => speeds[i % speeds.length]),
+// );
 
 export const worldSource = new BehaviorSubject<World | null>(null);
 export const directionSource = new BehaviorSubject<number>(startDirection);

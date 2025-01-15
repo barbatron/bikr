@@ -1,9 +1,14 @@
-import mqtt from "mqtt";
+import mqtt from "npm:mqtt";
 import { Buffer } from "node:buffer";
-import { map, Subject } from "rxjs";
-import { filter } from "rxjs/operators";
+import { map, Subject } from "npm:rxjs";
+import { filter } from "npm:rxjs/operators";
+import { IS_BROWSER } from "$fresh/runtime.ts";
 
-const client = mqtt.connect("mqtt://homeassistant.saltet.jolsson.info:1883", {
+const url = IS_BROWSER
+  ? "mqtt://homeassistant.saltet.jolsson.info:1884"
+  : "mqtt://homeassistant.saltet.jolsson.info:1883";
+
+const client = mqtt.connect(url, {
   username: "bikr",
   password: "abc123",
 });
