@@ -1,8 +1,8 @@
-import mqtt from "npm:mqtt";
+import { IS_BROWSER } from "$fresh/runtime.ts";
 import { Buffer } from "node:buffer";
+import mqtt from "npm:mqtt";
 import { map, Subject } from "npm:rxjs";
 import { filter } from "npm:rxjs/operators";
-import { IS_BROWSER } from "$fresh/runtime.ts";
 
 const url = IS_BROWSER
   ? "mqtt://homeassistant.saltet.jolsson.info:1884"

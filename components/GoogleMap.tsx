@@ -1,7 +1,15 @@
 // @deno-types="npm:@types/google.maps"
 import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { presence, streetViewLinks } from "../core/session-main.ts";
+import { withLatestFrom } from "rxjs";
+import { speedStream } from "../core/bike-telemetry.ts";
+import {
+  presence,
+  startPresence,
+  streetViewLinks,
+} from "../core/session-main.ts";
 import { LatLong } from "../core/types.ts";
+import { roundTo } from "../core/utils.ts";
+import { findClosestDirection } from "../core/world/streetview-utils.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 import { googleMapsContext } from "../islands/GoogleMapIsland.tsx";
 
@@ -29,26 +37,24 @@ export default function GoogleMap(
     return <p>Loading Google Maps...</p>;
   }
 
-  const trip = useObservable(presence);
-  const tripPosLatLng = useMemo<google.maps.LatLng>(
-    () =>
-      trip?.position
-        ? new google.maps.LatLng({
-          lat: trip.position[0],
-          lng: trip.position[1],
-        })
-        : new google.maps.LatLng({ lat, lng }),
-    [trip?.position[0], trip?.position[1]],
+  const [trip, speed] = useObservable(
+    presence.pipe(withLatestFrom(speedStream)),
+    [startPresence, 0.0],
   );
+
+  const tripPosLatLng = useMemo<google.maps.LatLngLiteral>(
+    () => ({
+      lat: trip.position[0],
+      lng: trip.position[1],
+    }),
+    [trip.position[0], trip.position[1]],
+  );
+  const tripDirection = trip.heading.degrees;
 
   const mapRef = useRef<HTMLDivElement | null>(null);
   const panoRef = useRef<HTMLDivElement | null>(null);
 
   const [map, setMap] = useState<null | google.maps.Map>(null);
-
-  const tripDirection = useMemo(() => trip?.heading.degrees ?? startDirection, [
-    trip?.heading.degrees ?? startDirection,
-  ]);
 
   // Map initialization
   useEffect(() => {
@@ -85,7 +91,7 @@ export default function GoogleMap(
     const settings = {
       position: { lat, lng },
       pov: {
-        heading: trip?.heading.degrees ?? startDirection,
+        heading: trip.heading.degrees ?? startDirection,
         pitch: 10,
       },
     };
@@ -117,12 +123,6 @@ export default function GoogleMap(
 
   // Update marker position
   useEffect(() => {
-    // if (!selfMarker || !tripPosLatLng) return;
-
-    // Update self marker position
-    // console.log("Setting marker position", tripPosLatLng.toString());
-    // selfMarker.position = tripPosLatLng;
-
     // Center map on marker
     if (!map) return;
     console.log("Update map+pano from position/heading", {
@@ -137,17 +137,64 @@ export default function GoogleMap(
     const panorama = m.getStreetView();
     if (panorama) {
       const p = panorama as google.maps.StreetViewPanorama;
-      p.setOptions({
-        position: tripPosLatLng,
-        pov: { heading: tripDirection, pitch: 0 },
-      });
-      // p.setPosition(tripPosLatLng);
-      // p.setPov({ heading: tripDirection, pitch: 0 });
+      // p.setOptions({
+      //   position: tripPosLatLng,
+      //   pov: { heading: tripDirection, pitch: 0 },
+      // });
+      p.setPov({ heading: tripDirection, pitch: 0 });
+      p.setPosition(tripPosLatLng);
     } else console.warn("Could not set panorama position/pov");
   }, [tripPosLatLng, tripDirection, map]);
 
+  const closestLink = findClosestDirection(
+    tripDirection,
+    streetViewLinks.value,
+  );
+  const mapC = (map as google.maps.Map)?.getCenter();
+  const posToStr = (pos: (number | undefined)[]) =>
+    `(${pos.map((x) => x?.toFixed(5).padStart(10)).join(", ")})`;
+  const mapPos = useMemo(() => posToStr([mapC?.lat(), mapC?.lng()]), [
+    mapC?.lat(),
+    mapC?.lng(),
+  ]);
+
   return (
     <>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          fontSize: "0.75em",
+          fontFamily: "monospace",
+        }}
+      >
+        <span style={{ margin: "0.5em", minWidth: "20em" }}>
+          {"trip_pos: "}
+          {posToStr(trip.position)}
+        </span>
+        <span style={{ margin: "0.5em", minWidth: "20em" }}>
+          map_pos: {mapPos}
+        </span>
+        <span style={{ margin: "0.5em", minWidth: "10em" }}>
+          speed: {speed.toFixed(1)}
+        </span>
+        <span style={{ margin: "0.5em", minWidth: "10em" }}>
+          dir: {trip.heading.degrees.toFixed(2)}
+        </span>
+        <span style={{ margin: "0.5em" }}>
+          dirs: {streetViewLinks.value.map((l, i) => {
+            const fmt = closestLink?.pano == l.pano ? "oblique" : "normal";
+            return (
+              <span
+                key={l.pano ?? ""}
+                style={{ marginRight: "0.5em", fontStyle: fmt }}
+              >
+                {(l.heading ?? -1).toFixed(2).padEnd(8)}
+              </span>
+            );
+          })}
+        </span>
+      </div>
       <div
         style={{ height: "80vh", width: "100%" }}
         ref={panoRef}
