@@ -1,62 +1,64 @@
 // @deno-types="npm:@types/google.maps"
-import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { presence, streetViewLinks } from "../core/session-main.ts";
-import { LatLong } from "../core/types.ts";
+import { useMemo } from "https://esm.sh/v128/preact@10.19.6/hooks/src/index.js";
+import { useContext, useEffect, useRef, useState } from "npm:preact/hooks";
+import {
+  distinctPresence,
+  startPresence,
+  streetViewLinks,
+} from "../core/session-main.ts";
+import {
+  positionToLatLng,
+  toUsableLinks,
+} from "../core/world/streetview-utils.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 import { googleMapsContext } from "../islands/GoogleMapIsland.tsx";
+import { IS_BROWSER } from "$fresh/runtime.ts";
 
 export type GoogleMapProps = {
   mapId: string;
-  lat: number;
-  lng: number;
-  startDirection: number;
   zoomLevel: number;
-  marker?: LatLong;
 };
 
 export default function GoogleMap(
   {
     mapId,
-    lat,
-    lng,
-    startDirection,
     zoomLevel,
   }: GoogleMapProps,
 ) {
-  console.log("GoogleMap", { mapId, lat, lng, zoomLevel });
+  if (!IS_BROWSER) {
+    return (
+      <p>Google Maps must be loaded on the client. No children will render</p>
+    );
+  }
+
+  console.log("GoogleMap", { mapId, zoomLevel });
   const googleMaps = useContext(googleMapsContext);
+  console.log("Has context?", googleMaps);
   if (!googleMaps) {
     return <p>Loading Google Maps...</p>;
   }
+  const presence = useObservable(distinctPresence) ?? startPresence;
 
-  const trip = useObservable(presence);
-  const tripPosLatLng = useMemo<google.maps.LatLng>(
-    () =>
-      trip?.position
-        ? new google.maps.LatLng({
-          lat: trip.position[0],
-          lng: trip.position[1],
-        })
-        : new google.maps.LatLng({ lat, lng }),
-    [trip?.position[0], trip?.position[1]],
+  const tripPosLatLng = useMemo<google.maps.LatLngLiteral>(
+    () => positionToLatLng(presence.position),
+    [...presence.position],
   );
+  const tripDirection = useMemo<number>(() => presence.heading.degrees, [
+    presence.heading.degrees,
+  ]);
 
   const mapRef = useRef<HTMLDivElement | null>(null);
   const panoRef = useRef<HTMLDivElement | null>(null);
 
   const [map, setMap] = useState<null | google.maps.Map>(null);
 
-  const tripDirection = useMemo(() => trip?.heading.degrees ?? startDirection, [
-    trip?.heading.degrees ?? startDirection,
-  ]);
-
   // Map initialization
   useEffect(() => {
     if (!mapRef.current) return;
     console.log("Got mapref", mapRef.current);
     const newMap = new google.maps.Map(mapRef.current, {
-      center: { lat, lng },
-      heading: startDirection,
+      center: tripPosLatLng,
+      heading: tripDirection,
       zoom: zoomLevel,
       mapId,
       colorScheme: google.maps.ColorScheme.DARK,
@@ -65,28 +67,23 @@ export default function GoogleMap(
   }, [mapRef.current]);
 
   function handleNewLinks(this: google.maps.StreetViewPanorama) {
-    // const gmap = map as google.maps.Map | null;
-    // if (!gmap) return;
-    // console.log("handleNewLinks", { thisIs: this, gmap });
     const links = this.getLinks();
     console.log("Got new links", {
       headings: links?.map((l) => l?.heading),
       currentHeading: this.getPov().heading,
+      tripDirection: tripDirection,
     });
-    streetViewLinks.value = (links ?? []).filter((l) => !!l && l !== null).map(
-      (l) => l as google.maps.StreetViewLink,
-    );
+    streetViewLinks.value = toUsableLinks(links);
   }
 
   // Street view panorama initialization
   useEffect(() => {
     if (!map || !panoRef.current) return;
-    if (!tripDirection) return;
     const settings = {
-      position: { lat, lng },
+      position: tripPosLatLng,
       pov: {
-        heading: trip?.heading.degrees ?? startDirection,
-        pitch: 10,
+        heading: tripDirection,
+        pitch: 0,
       },
     };
     console.log("Creating panorama", {
@@ -105,29 +102,13 @@ export default function GoogleMap(
     };
   }, [map, panoRef.current]);
 
-  // useEffect(() => {
-  //   if (!map) return;
-  //   const newSelfMarker = new googleMaps.marker.AdvancedMarkerElement({
-  //     map,
-  //     title: "Presence",
-  //   });
-  //   newSelfMarker.id = "selfMarker";
-  //   setSelfMarker(newSelfMarker);
-  // }, [map]);
-
   // Update marker position
   useEffect(() => {
-    // if (!selfMarker || !tripPosLatLng) return;
-
-    // Update self marker position
-    // console.log("Setting marker position", tripPosLatLng.toString());
-    // selfMarker.position = tripPosLatLng;
-
     // Center map on marker
     if (!map) return;
     console.log("Update map+pano from position/heading", {
-      tripPosLatLng,
-      tripDirection,
+      tripPosLatLng: tripPosLatLng,
+      tripDirection: tripDirection,
     });
     const m = map as google.maps.Map;
     m.panTo(tripPosLatLng);
@@ -141,10 +122,8 @@ export default function GoogleMap(
         position: tripPosLatLng,
         pov: { heading: tripDirection, pitch: 0 },
       });
-      // p.setPosition(tripPosLatLng);
-      // p.setPov({ heading: tripDirection, pitch: 0 });
     } else console.warn("Could not set panorama position/pov");
-  }, [tripPosLatLng, tripDirection, map]);
+  }, [tripPosLatLng, tripDirection]);
 
   return (
     <>

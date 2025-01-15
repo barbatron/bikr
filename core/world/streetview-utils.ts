@@ -1,10 +1,23 @@
-type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
+import { LatLong, Presence } from "../types.ts";
+
+export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
   heading: number;
 };
+
 type NewHeadingResult = {
   minDiff: number;
   link: StreetViewLinkWithHeading;
 } | null;
+
+export function toUsableLinks(
+  links: null | (google.maps.StreetViewLink | null)[],
+): StreetViewLinkWithHeading[] {
+  return (links ?? []).filter((l) =>
+    !!l && l !== null && typeof l.heading === "number"
+  ).map(
+    (l) => l as StreetViewLinkWithHeading,
+  );
+}
 
 export function findClosestDirection(
   currentDirection: number,
@@ -32,4 +45,18 @@ export function findClosestDirection(
     return null;
   }
   return newHeadingResult.link;
+}
+
+export function positionToLatLng(
+  position: LatLong,
+): google.maps.LatLngLiteral {
+  return {
+    lat: position[0],
+    lng: position[1],
+  };
+}
+export function presenceToLatLng(
+  presence: Presence,
+): google.maps.LatLngLiteral {
+  return positionToLatLng(presence.position);
 }

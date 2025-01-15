@@ -1,16 +1,17 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { ComponentChildren, createContext } from "preact";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import GoogleMap, { GoogleMapProps } from "../components/GoogleMap.tsx";
 import { worldSource } from "../core/session-main.ts";
 import { StreetViewWorld } from "../core/world/streetview-world.ts";
 
 export type MapsLibs = typeof google.maps;
+export type MapsLibsContext = MapsLibs | null;
 
-export const googleMapsContext = createContext<MapsLibs | null>(null);
+export const googleMapsContext = createContext<MapsLibsContext>(null);
 
 export function GoogleMapsProvider(
-  props: { children: ComponentChildren; apiKey: string },
+  props: { children: ComponentChildren; apiKey: string; mapId: string },
 ) {
   if (!IS_BROWSER) {
     return (
@@ -18,11 +19,15 @@ export function GoogleMapsProvider(
     );
   }
 
-  const [googleMaps, setGoogleMaps] = useState<typeof google.maps | null>(null);
+  const [googleMaps, setGoogleMaps] = useState<MapsLibsContext>(null);
+  useEffect(() => {
+    console.log("Loading google maps");
+  }, []);
 
   return (
     <>
       <script
+        async
         onLoad={() => {
           console.log("Loaded script");
           if (!googleMaps) setGoogleMaps(google.maps);
@@ -30,7 +35,7 @@ export function GoogleMapsProvider(
             new StreetViewWorld(new google.maps.StreetViewService()),
           );
         }}
-        src={`https://maps.googleapis.com/maps/api/js?key=${props.apiKey}&libraries=maps,marker,streetView`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${props.apiKey}&map_ids=${props.mapId}&libraries=maps,marker,streetView`}
         crossorigin=""
       />
       {/* Provide context to children */}
@@ -45,7 +50,7 @@ export default function GoogleMapIsland(
   props: GoogleMapProps & { apiKey: string },
 ) {
   return (
-    <GoogleMapsProvider apiKey={props.apiKey}>
+    <GoogleMapsProvider apiKey={props.apiKey} mapId={props.mapId}>
       <GoogleMap {...props} />
     </GoogleMapsProvider>
   );

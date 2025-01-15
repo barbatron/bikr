@@ -1,11 +1,12 @@
 import { BehaviorSubject, interval, map, pairwise } from "rxjs";
 // import { speedStream } from "./bike-telemetry";
-import { combineLatestWith } from "rxjs/operators";
-import { createPresence } from "./session.ts";
-import { LatLong, Movement } from "./types.ts";
-import { World } from "./world/world.ts";
-import { roundPosition, roundTo } from "./utils.ts";
 import { signal } from "npm:@preact/signals-core";
+import { combineLatestWith } from "rxjs/operators";
+import { LatLong, Movement, Presence } from "./types.ts";
+import { presenceComparator, roundPosition, roundTo } from "./utils.ts";
+import { World } from "./world/world.ts";
+import { distinctUntilChanged } from "rxjs";
+import { StreetViewLinkWithHeading } from "./world/streetview-utils.ts";
 
 export const startPosition: LatLong = [59.292455, 18.1195134];
 export const startDirection = 67.82;
@@ -15,14 +16,11 @@ export const bikeRoute = signal({
   routeEnd: "Tyresö Centrum, 135 40 Tyresö",
 });
 
-export const presence = createPresence(startPosition, startDirection);
-// const world = new TestWorld([
-//   [18.080966137329995, 59.25573603011762],
-//   [18.080966137329995, 59.25435999856927],
-//   [18.083203716452743, 59.25435999856927],
-//   [18.083203716452743, 59.25573603011762],
-//   [18.080966137329995, 59.25573603011762],
-// ].map(([lng, lat]) => [lat, lng]));
+export const startPresence = {
+  position: startPosition,
+  heading: { degrees: startDirection },
+};
+export const presence = new BehaviorSubject<Presence>(startPresence);
 
 const speeds = [0.1, 2, 5, 7, 10, 10, 10, 4, 2, 0.5];
 const speedStream = interval(2000).pipe(
@@ -32,7 +30,7 @@ const speedStream = interval(2000).pipe(
 export const worldSource = new BehaviorSubject<World | null>(null);
 export const directionSource = new BehaviorSubject<number>(startDirection);
 
-export const streetViewLinks = signal<google.maps.StreetViewLink[]>([]);
+export const streetViewLinks = signal<StreetViewLinkWithHeading[]>([]);
 
 export const trip = speedStream
   .pipe(
@@ -80,6 +78,15 @@ export const trip = speedStream
       });
   });
 
-presence.subscribe((presence) => {
-  console.log("[presence]", presence);
+export const distinctPresence = presence
+  .pipe(
+    distinctUntilChanged(presenceComparator),
+  );
+
+distinctPresence.subscribe((p) => {
+  console.log(
+    "[distinctPresence]",
+    roundPosition(p.position),
+    p.heading.degrees,
+  );
 });
