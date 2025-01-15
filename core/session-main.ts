@@ -49,7 +49,7 @@ export const trip = speedStream
     const avgSpeedMetersPerSecond = next.speed;
     const timeDeltaMillis = next.timestamp.getTime() - prev.timestamp.getTime();
     const timeDelta = timeDeltaMillis / 1000;
-    const distance = avgSpeedMetersPerSecond * timeDelta;
+    const distance = avgSpeedMetersPerSecond * (timeDelta < 5 ? timeDelta : 1);
     const movement: Movement = {
       meters: roundTo(distance, 2),
       heading: { degrees: direction },

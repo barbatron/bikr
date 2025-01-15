@@ -39,7 +39,7 @@ client.on(
 
 export const speedStream = messageSource.pipe(
   filter(([topic]) => topic === speedTopic),
-  map(([_, message]) => parseFloat(message.toString())),
+  map(([_, message]) => parseFloat(message.toString()) * 0.2),
 );
 
 // messageSource.subscribe((args) => {
