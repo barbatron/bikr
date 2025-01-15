@@ -149,14 +149,14 @@ export default function GoogleMap(
   return (
     <>
       <div
-        style={{ float: "left", height: "100vh", width: "50%" }}
-        ref={mapRef}
-        id="map"
-      />
-      <div
-        style={{ float: "left", height: "100vh", width: "50%" }}
+        style={{ height: "80vh", width: "100%" }}
         ref={panoRef}
         id="pano"
+      />
+      <div
+        style={{ height: "20vh", width: "100%" }}
+        ref={mapRef}
+        id="map"
       />
     </>
   );
