@@ -33,3 +33,9 @@ export function findClosestDirection(
   }
   return newHeadingResult.link;
 }
+
+export function googleLatLongToLiteral(
+  latLng: google.maps.LatLng | google.maps.LatLngLiteral,
+): google.maps.LatLngLiteral {
+  return latLng instanceof google.maps.LatLng ? latLng.toJSON() : latLng;
+}
