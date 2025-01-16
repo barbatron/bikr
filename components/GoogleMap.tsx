@@ -8,7 +8,6 @@ import {
   streetViewLinks,
 } from "../core/session-main.ts";
 import { LatLong } from "../core/types.ts";
-import { roundTo } from "../core/utils.ts";
 import { findClosestDirection } from "../core/world/streetview-utils.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 import { googleMapsContext } from "../islands/GoogleMapIsland.tsx";
@@ -71,9 +70,6 @@ export default function GoogleMap(
   }, [mapRef.current]);
 
   function handleNewLinks(this: google.maps.StreetViewPanorama) {
-    // const gmap = map as google.maps.Map | null;
-    // if (!gmap) return;
-    // console.log("handleNewLinks", { thisIs: this, gmap });
     const links = this.getLinks();
     console.log("Got new links", {
       headings: links?.map((l) => l?.heading),
@@ -83,6 +79,37 @@ export default function GoogleMap(
       (l) => l as google.maps.StreetViewLink,
     );
   }
+
+  // function handlePanoPresenceUpdate(this: google.maps.StreetViewPanorama) {
+  //   const pos = this.getPosition();
+  //   const pov = this.getPov();
+  //   if (pos?.lat() && pos?.lng()) {
+  //     // Check if same as trip position and heading
+  //     const tripPos = tripPosLatLng;
+  //     const tripDir = tripDirection;
+  //     const posDiff = Math.abs(pos.lat() - tripPos.lat) +
+  //       Math.abs(pos.lng() - tripPos.lng);
+  //     const dirDiff = Math.abs(pov.heading - tripDir);
+  //     if (posDiff < 0.0001 && dirDiff < 0.1) {
+  //       console.log("[gm] Pano position matches trip position", {
+  //         posDiff,
+  //         dirDiff,
+  //         pos: pos.toJSON(),
+  //         tripPos,
+  //         dir: pov.heading,
+  //         tripDir,
+  //       });
+  //       return;
+  //     }
+  //     // Update presence based on pano
+  //     const newPresence = {
+  //       position: [pos.lat(), pos.lng()],
+  //       heading: { degrees: pov.heading },
+  //     } satisfies Presence;
+  //     console.log("[gm] Updating presence from pano", { trip, newPresence });
+  //     presence.next(newPresence);
+  //   }
+  // }
 
   // Street view panorama initialization
   useEffect(() => {
@@ -104,10 +131,18 @@ export default function GoogleMap(
       settings,
     );
     map.setStreetView(newPanorama);
-    const events = newPanorama.addListener("links_changed", handleNewLinks);
+    const linksChangedListener = newPanorama.addListener(
+      "links_changed",
+      handleNewLinks,
+    );
+    // const posChangedListener = newPanorama.addListener(
+    //   "position_changed",
+    //   handlePanoPresenceUpdate,
+    // );
     return () => {
-      console.log("Unsubbing from links_changed");
-      events.remove();
+      console.log("Unsubbing from pano events");
+      linksChangedListener.remove();
+      // posChangedListener.remove();
     };
   }, [map, panoRef.current]);
 
@@ -137,10 +172,6 @@ export default function GoogleMap(
     const panorama = m.getStreetView();
     if (panorama) {
       const p = panorama as google.maps.StreetViewPanorama;
-      // p.setOptions({
-      //   position: tripPosLatLng,
-      //   pov: { heading: tripDirection, pitch: 0 },
-      // });
       p.setPov({ heading: tripDirection, pitch: 0 });
       p.setPosition(tripPosLatLng);
     } else console.warn("Could not set panorama position/pov");
