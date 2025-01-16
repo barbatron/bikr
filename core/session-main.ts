@@ -13,10 +13,10 @@ const nackaReservSaltsjo = {
 export const startPosition = nackaReservSaltsjo.position;
 export const startDirection = nackaReservSaltsjo.heading;
 
-export const bikeRoute = signal({
+export const bikeRoute = {
   routeStart: { lat: 59.261776, lng: 18.130394 },
   routeEnd: "Tyresö Centrum, 135 40 Tyresö",
-});
+};
 
 export const startPresence: Readonly<Presence> = {
   position: startPosition,

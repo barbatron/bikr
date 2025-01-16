@@ -11,6 +11,20 @@ import { LatLong } from "../core/types.ts";
 import { findClosestDirection } from "../core/world/streetview-utils.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 import { googleMapsContext } from "../islands/GoogleMapIsland.tsx";
+import { distinctUntilChanged } from "rxjs";
+import { Signal } from "npm:@preact/signals-core";
+
+const presenceWithSpeed = presence.pipe(
+  withLatestFrom(speedStream),
+  distinctUntilChanged(
+    ([prevPresence, prevSpeed], [currPresence, currSpeed]) => {
+      return prevPresence.position[0] === currPresence.position[0] &&
+        prevPresence.position[1] === currPresence.position[1] &&
+        prevPresence.heading.degrees === currPresence.heading.degrees &&
+        prevSpeed === currSpeed;
+    },
+  ),
+);
 
 export type GoogleMapProps = {
   mapId: string;
@@ -19,6 +33,7 @@ export type GoogleMapProps = {
   startDirection: number;
   zoomLevel: number;
   marker?: LatLong;
+  mapsRoute?: Signal<google.maps.DirectionsRoute[] | null>;
 };
 
 export default function GoogleMap(
@@ -28,6 +43,7 @@ export default function GoogleMap(
     lng,
     startDirection,
     zoomLevel,
+    // mapsRoute,
   }: GoogleMapProps,
 ) {
   console.log("GoogleMap", { mapId, lat, lng, zoomLevel });
@@ -37,7 +53,7 @@ export default function GoogleMap(
   }
 
   const [trip, speed] = useObservable(
-    presence.pipe(withLatestFrom(speedStream)),
+    presenceWithSpeed,
     [startPresence, 0.0],
   );
 
