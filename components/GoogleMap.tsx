@@ -1,7 +1,7 @@
 // @deno-types="npm:@types/google.maps"
 import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { withLatestFrom } from "rxjs";
-import { speedStream } from "../core/bike-telemetry.ts";
+import { speedStream, triggerSpeed } from "../core/bike-telemetry.ts";
 import {
   presence,
   startPresence,
@@ -194,6 +194,12 @@ export default function GoogleMap(
             );
           })}
         </span>
+        <button
+          style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
+          onClick={() => void triggerSpeed(5)}
+        >
+          5 kph
+        </button>
       </div>
       <div
         style={{ height: "80vh", width: "100%" }}
