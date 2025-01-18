@@ -33,7 +33,6 @@ export const presence = new BehaviorSubject<Presence>(startPresence);
 export const worldSource = new BehaviorSubject<World | null>(null);
 export const directionSource = new BehaviorSubject<number>(startDirection).pipe(
   debounce(() => interval(1000)),
-  // map(direction => ({heading: { degrees: direction }}) satisfies Pick<Presence, "heading">),
 );
 
 export const streetViewLinks = new BehaviorSubject<
