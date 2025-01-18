@@ -1,13 +1,16 @@
+import {
+  bikeRoute,
+  startDirection,
+  startPosition,
+} from "../core/session-main.ts";
 import GoogleMap from "../islands/GoogleMap.tsx";
-import { startDirection, startPosition } from "../core/session-main.ts";
 import GoogleMapsLibraryContext from "../islands/GoogleMapsLibraryContext.tsx";
-// import { useSignal } from "npm:@preact/signals";
+import GoogleMapsRouteContext from "../islands/GoogleMapsRouteContext.tsx";
 
 export default function Home() {
   const [lat, lng] = startPosition;
   const API_KEY = Deno.env.get("GOOGLE_MAP_API_KEY")!;
   const MAP_ID = Deno.env.get("GOOGLE_MAP_ID")!;
-  // const bikeRouteSignal = useSignal<google.maps.DirectionsRoute[]>([]);
 
   return (
     <GoogleMapsLibraryContext
@@ -19,8 +22,7 @@ export default function Home() {
         lng={lng}
         startDirection={startDirection}
         zoomLevel={18}
-      >
-      </GoogleMap>
+      />
     </GoogleMapsLibraryContext>
   );
 }

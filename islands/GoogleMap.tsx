@@ -1,6 +1,7 @@
 // @deno-types="npm:@types/google.maps"
-import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { withLatestFrom } from "rxjs";
+import { Signal } from "npm:@preact/signals-core";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { distinctUntilChanged, withLatestFrom } from "rxjs";
 import { speedStream, triggerSpeed } from "../core/bike-telemetry.ts";
 import {
   presence,
@@ -10,9 +11,6 @@ import {
 import { LatLong, Presence } from "../core/types.ts";
 import { findClosestDirection } from "../core/world/streetview-utils.ts";
 import { useObservable } from "../hooks/useObservable.ts";
-import { googleMapsContext } from "./GoogleMapsLibraryContext.tsx";
-import { distinctUntilChanged } from "rxjs";
-import { Signal } from "npm:@preact/signals-core";
 
 const presenceWithSpeed = presence.pipe(
   withLatestFrom(speedStream),
@@ -47,10 +45,6 @@ export default function GoogleMap(
   }: GoogleMapProps,
 ) {
   console.log("GoogleMap", { mapId, lat, lng, zoomLevel });
-  const googleMaps = useContext(googleMapsContext);
-  if (!googleMaps) {
-    return <p>Loading Google Maps...</p>;
-  }
 
   const [trip, speed] = useObservable(
     presenceWithSpeed,
@@ -91,8 +85,10 @@ export default function GoogleMap(
       headings: links?.map((l) => l?.heading),
       currentHeading: this.getPov().heading,
     });
-    streetViewLinks.value = (links ?? []).filter((l) => !!l && l !== null).map(
-      (l) => l as google.maps.StreetViewLink,
+    streetViewLinks.next(
+      (links ?? []).filter((l) => !!l && l !== null).map(
+        (l) => l as google.maps.StreetViewLink,
+      ),
     );
   }
 

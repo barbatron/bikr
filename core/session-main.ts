@@ -1,5 +1,11 @@
-import { signal } from "npm:@preact/signals-core";
-import { BehaviorSubject, interval, map, pairwise, throttle } from "rxjs";
+import {
+  BehaviorSubject,
+  debounce,
+  interval,
+  map,
+  pairwise,
+  throttle,
+} from "rxjs";
 import { combineLatestWith } from "rxjs/operators";
 import { speedStream } from "./bike-telemetry.ts";
 import { LatLong, Movement, Presence } from "./types.ts";
@@ -25,9 +31,14 @@ export const startPresence: Readonly<Presence> = {
 export const presence = new BehaviorSubject<Presence>(startPresence);
 
 export const worldSource = new BehaviorSubject<World | null>(null);
-export const directionSource = new BehaviorSubject<number>(startDirection);
+export const directionSource = new BehaviorSubject<number>(startDirection).pipe(
+  debounce(() => interval(1000)),
+  // map(direction => ({heading: { degrees: direction }}) satisfies Pick<Presence, "heading">),
+);
 
-export const streetViewLinks = signal<google.maps.StreetViewLink[]>([]);
+export const streetViewLinks = new BehaviorSubject<
+  google.maps.StreetViewLink[]
+>([]);
 
 export const trip = speedStream
   .pipe(
@@ -37,7 +48,7 @@ export const trip = speedStream
     // Provide last + previous speed/timestamp tuple to get deltas
     pairwise(),
     // take(speeds.length - 1),
-    combineLatestWith(worldSource, directionSource),
+    combineLatestWith(worldSource, directionSource, streetViewLinks),
   )
   .subscribe(([[prev, next], world, direction]) => {
     console.log("[trip] update", { speed: { prev, next }, direction });
@@ -45,6 +56,7 @@ export const trip = speedStream
     const timeDeltaMillis = next.timestamp.getTime() - prev.timestamp.getTime();
     const timeDelta = timeDeltaMillis / 1000;
     const distance = avgSpeedMetersPerSecond * (timeDelta < 5 ? timeDelta : 1);
+
     const movement: Movement = {
       meters: roundTo(distance, 2),
       heading: { degrees: direction },
