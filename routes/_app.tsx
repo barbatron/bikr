@@ -9,7 +9,7 @@ export default function App({ Component }: PageProps) {
         <title>google map fresh example</title>
         <link rel="stylesheet" href="/styles.css" />
       </head>
-      <body>
+      <body class="bg-gray-800">
         <Component />
       </body>
     </html>

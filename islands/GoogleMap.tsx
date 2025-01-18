@@ -215,6 +215,7 @@ export default function GoogleMap(
           flexDirection: "row",
           fontSize: "0.75em",
           fontFamily: "monospace",
+          color: "white",
         }}
       >
         <span style={{ margin: "0.5em", minWidth: "20em" }}>
