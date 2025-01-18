@@ -26,9 +26,6 @@ const presenceWithSpeed = presence.pipe(
 
 export type GoogleMapProps = {
   mapId: string;
-  lat: number;
-  lng: number;
-  startDirection: number;
   zoomLevel: number;
   marker?: LatLong;
   mapsRoute?: Signal<google.maps.DirectionsRoute[] | null>;
@@ -37,14 +34,11 @@ export type GoogleMapProps = {
 export default function GoogleMap(
   {
     mapId,
-    lat,
-    lng,
-    startDirection,
     zoomLevel,
     // mapsRoute,
   }: GoogleMapProps,
 ) {
-  console.log("GoogleMap", { mapId, lat, lng, zoomLevel });
+  console.log("[gm] Render", { mapId, zoomLevel });
 
   const [trip, speed] = useObservable(
     presenceWithSpeed,
@@ -70,8 +64,8 @@ export default function GoogleMap(
     if (!mapRef.current) return;
     console.log("Got mapref", mapRef.current);
     const newMap = new google.maps.Map(mapRef.current, {
-      center: { lat, lng },
-      heading: startDirection,
+      center: tripPosLatLng,
+      heading: tripDirection,
       zoom: zoomLevel,
       mapId,
       colorScheme: google.maps.ColorScheme.DARK,
