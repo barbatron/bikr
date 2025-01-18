@@ -1,12 +1,14 @@
 import { useContext, useEffect, useState } from "npm:preact/hooks";
-import { googleMapsContext } from "../islands/GoogleMapIsland.tsx";
+import { bikeRoute } from "../core/session-main.ts";
+import { googleMapsContext } from "./GoogleMapsLibraryContext.tsx";
+import { Signal } from "npm:@preact/signals-core";
 
 type UseMapsRouteOptions = {
   startAt: google.maps.DirectionsRequest["origin"];
   endAt: google.maps.DirectionsRequest["destination"];
 };
 
-export function useMapsRoute({ startAt, endAt }: UseMapsRouteOptions) {
+function useMapsRoute({ startAt, endAt }: UseMapsRouteOptions) {
   const hasGoogleMaps = useContext(googleMapsContext);
   if (!hasGoogleMaps) {
     return null;
@@ -37,6 +39,27 @@ export function useMapsRoute({ startAt, endAt }: UseMapsRouteOptions) {
       });
       cancelled = true;
     };
-  });
+  }, [JSON.stringify(startAt), JSON.stringify(endAt)]);
   return routes;
+}
+
+type GoogleMapsRoutesLoaderProps = {
+  startAt: typeof bikeRoute.routeStart;
+  endAt: typeof bikeRoute.routeEnd;
+  routesSignal: Signal<google.maps.DirectionsRoute[] | null>;
+};
+
+export default function GoogleMapsRoutesLoader(
+  { startAt, endAt, routesSignal }: GoogleMapsRoutesLoaderProps,
+) {
+  const context = useContext(googleMapsContext);
+  if (!context) return null;
+  console.log("GoogleMapsRoutesLoader");
+  const routes = useMapsRoute({
+    startAt,
+    endAt,
+  });
+  if (routes) routesSignal.value = routes;
+  // const json = useMemo(() => JSON.stringify(routes, null, 2), [routes]);
+  return null;
 }
