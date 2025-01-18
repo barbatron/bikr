@@ -1,5 +1,5 @@
 import { computeDestinationPoint, isPointInPolygon } from "geolib";
-import { LatLong, Movement, TurnOptions } from "../types.ts";
+import { LatLong, Movement } from "../types.ts";
 import { MovementRequest, MovementResult, World } from "./world.ts";
 
 type WorldBounds = LatLong[];
@@ -47,11 +47,9 @@ export class TestWorld implements World {
       meters,
       heading: { degrees: headingDegrees },
     };
-    const turnOptions: TurnOptions = [];
     return Promise.resolve({
       movementActual,
       presence: newPresence,
-      turnOptions,
     });
   }
 }

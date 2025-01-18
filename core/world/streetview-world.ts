@@ -33,7 +33,6 @@ export class StreetViewWorld implements World {
           position: [proposedPosition.latitude, proposedPosition.longitude],
           heading: { degrees: headingDegrees },
         },
-        turnOptions: [],
       };
     };
 
@@ -73,6 +72,6 @@ export class StreetViewWorld implements World {
       meters,
       heading: { degrees: newHeading },
     };
-    return { movementActual, presence: newPresence, turnOptions: [] };
+    return { movementActual, presence: newPresence };
   }
 }

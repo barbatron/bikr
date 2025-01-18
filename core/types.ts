@@ -14,24 +14,3 @@ export type Presence<
 > = Position<TCoords> & Heading<TDirection>;
 
 export type Movement = DistanceMeters & Heading;
-
-export type TurnOptions = Array<AngleDegrees>;
-
-// export const markerLibrary = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
-
-// import { google } from "npm:@types/google.maps@3.58.1";
-
-// import apiLoader from "@googlemaps/js-api-loader";
-
-// export async function loadGoogleMaps(): Promise<Pick<google, "maps" | "marker" | "streetView">> {
-//   const loader = new apiLoader.Loader({
-//     apiKey: Deno.env.get("GOOGLE_MAP_API_KEY")!,
-//     version: "weekly",
-//   });
-//   const [maps, marker, streetView] = await Promise.all([
-//     loader.importLibrary("maps"),
-//     loader.importLibrary("marker"),
-//     loader.importLibrary("streetView")
-//   ]);
-//   return { maps, marker, streetView };
-// }
