@@ -28,7 +28,7 @@ export type GoogleMapProps = {
   mapId: string;
   zoomLevel: number;
   marker?: LatLong;
-  mapsRoute?: Signal<google.maps.DirectionsRoute[] | null>;
+  // mapsRoute?: Signal<google.maps.DirectionsRoute[] | null>;
 };
 
 export default function GoogleMap(
@@ -58,11 +58,14 @@ export default function GoogleMap(
   const panoRef = useRef<HTMLDivElement | null>(null);
 
   const [map, setMap] = useState<null | google.maps.Map>(null);
+  const [panorama, setPanorama] = useState<
+    null | google.maps.StreetViewPanorama
+  >(null);
 
   // Map initialization
   useEffect(() => {
     if (!mapRef.current) return;
-    console.log("Got mapref", mapRef.current);
+    console.log("[gm] Got mapref", mapRef.current);
     const newMap = new google.maps.Map(mapRef.current, {
       center: tripPosLatLng,
       heading: tripDirection,
@@ -73,63 +76,23 @@ export default function GoogleMap(
     setMap(newMap);
   }, [mapRef.current]);
 
-  function handleNewLinks(this: google.maps.StreetViewPanorama) {
-    const links = this.getLinks();
-    console.log("Got new links", {
-      headings: links?.map((l) => l?.heading),
-      currentHeading: this.getPov().heading,
-    });
-    streetViewLinks.next(
-      (links ?? []).filter((l) => !!l && l !== null).map(
-        (l) => l as google.maps.StreetViewLink,
-      ),
-    );
-  }
-
-  function handlePanoPresenceUpdate(this: google.maps.StreetViewPanorama) {
-    const pos = this.getPosition();
-    const pov = this.getPov();
-    console.log("[gm] Pano pos/pov updated", { pos, pov });
-    if (pos?.lat() && pos?.lng()) {
-      // Check if same as trip position and heading
-      const tripPos = tripPosLatLng;
-      const tripDir = tripDirection;
-      const posDiff = Math.abs(pos.lat() - tripPos.lat) +
-        Math.abs(pos.lng() - tripPos.lng);
-      const dirDiff = Math.abs(pov.heading - tripDir);
-      if (posDiff < 0.0001 && dirDiff < 0.1) {
-        console.log("[gm] Pano position matches trip position", {
-          posDiff,
-          dirDiff,
-          pos: pos.toJSON(),
-          tripPos,
-          dir: pov.heading,
-          tripDir,
-        });
-        return;
-      }
-      // Update presence based on pano
-      const newPresence = {
-        position: [pos.lat(), pos.lng()],
-        heading: { degrees: pov.heading },
-      } satisfies Presence;
-      console.log("[gm] Updating presence from pano", { trip, newPresence });
-      presence.next(newPresence);
-    }
-  }
-
   // Street view panorama initialization
   useEffect(() => {
     if (!map || !panoRef.current) return;
-    if (!tripDirection) return;
-    const settings = {
-      position: { lat, lng },
+    if ((map as google.maps.Map).getStreetView() == panorama) {
+      console.log("[gm] Map already has street view, skipping pano init");
+      return;
+    }
+    const settings: google.maps.StreetViewPanoramaOptions = {
+      position: tripPosLatLng,
       pov: {
-        heading: trip.heading.degrees ?? startDirection,
-        pitch: 10,
+        heading: tripDirection,
+        pitch: 0,
       },
+      clickToGo: false,
+      addressControl: false,
     };
-    console.log("Creating panorama", {
+    console.log("[gm[ Got map, creating panorama", {
       panoRef: panoRef.current,
       settings,
     });
@@ -138,6 +101,65 @@ export default function GoogleMap(
       settings,
     );
     map.setStreetView(newPanorama);
+    setPanorama(newPanorama);
+
+    function handleNewLinks(
+      this: google.maps.StreetViewPanorama,
+    ) {
+      const links = this.getLinks();
+      console.log("Got new links", {
+        headings: links?.map((l) => l?.heading),
+        currentHeading: this.getPov().heading,
+      });
+      streetViewLinks.next(
+        (links ?? []).filter((l) => !!l && l !== null).map(
+          (l) => l as google.maps.StreetViewLink,
+        ),
+      );
+    }
+
+    function handlePanoPresenceUpdate(this: google.maps.StreetViewPanorama) {
+      const pos = this.getPosition();
+      if (!pos?.lat() || !pos?.lng()) {
+        console.warn("[gm] Pano aint got position!");
+        return;
+      }
+      const pov = this.getPov();
+      // Check if same as trip position and heading
+      const tripPos = tripPosLatLng;
+      const tripDir = tripDirection;
+      const posDiff = Math.sqrt(
+        Math.pow(pos.lat() - tripPos.lat, 2) +
+          Math.pow(pos.lng() - tripPos.lng, 2),
+      );
+      const dirDiff = pov.heading - tripDir;
+      console.log(
+        "[gm] Pano pos/pov updated",
+        JSON.stringify({
+          lat: pos.lat().toFixed(5),
+          lng: pos.lng().toFixed(5),
+          pov_heading: pov.heading.toFixed(1),
+          pos_diff: posDiff.toFixed(5),
+          dir_diff: dirDiff.toFixed(1),
+        }),
+      );
+
+      if (posDiff < 0.0001 && Math.abs(dirDiff) < 0.1) {
+        console.log("[gm] Pano position matches trip position", {
+          posDiff,
+          dirDiff,
+        });
+        return;
+      }
+      // Update presence based on pano
+      // const newPresence = {
+      //   position: [pos.lat(), pos.lng()],
+      //   heading: { degrees: pov.heading },
+      // } satisfies Presence;
+      // console.log("[gm] Updating presence from pano", { trip, newPresence });
+      // presence.next(newPresence);
+    }
+
     const listeners = [
       newPanorama.addListener(
         "links_changed",
@@ -158,17 +180,7 @@ export default function GoogleMap(
     };
   }, [map, panoRef.current]);
 
-  // useEffect(() => {
-  //   if (!map) return;
-  //   const newSelfMarker = new googleMaps.marker.AdvancedMarkerElement({
-  //     map,
-  //     title: "Presence",
-  //   });
-  //   newSelfMarker.id = "selfMarker";
-  //   setSelfMarker(newSelfMarker);
-  // }, [map]);
-
-  // Update marker position
+  // Update map+panorama based on trip position and heading
   useEffect(() => {
     // Center map on marker
     if (!map) return;
@@ -184,8 +196,12 @@ export default function GoogleMap(
     const panorama = m.getStreetView();
     if (panorama) {
       const p = panorama as google.maps.StreetViewPanorama;
-      p.setPov({ heading: tripDirection, pitch: 0 });
-      p.setPosition(tripPosLatLng);
+      p.setOptions({
+        position: tripPosLatLng,
+        pov: { heading: tripDirection, pitch: 0 },
+      });
+      // p.setPov({ heading: tripDirection, pitch: 0 });
+      // p.setPosition(tripPosLatLng);
     } else console.warn("Could not set panorama position/pov");
   }, [tripPosLatLng, tripDirection, map]);
 
@@ -239,6 +255,7 @@ export default function GoogleMap(
           })}
         </span>
         <button
+          class="bg-gray-700"
           style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
           onClick={() => void triggerSpeed(5)}
         >
