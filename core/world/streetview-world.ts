@@ -36,7 +36,11 @@ export class StreetViewWorld implements World {
       };
     };
 
-    const panoLinks = streetViewLinks.value; // data.links;
+    const panoLinks = streetViewLinks.value;
+    if (!panoLinks || panoLinks.length === 0) {
+      console.log("[sv] No links available!");
+      return createObeyingMovementResult();
+    }
     const bestMatchLink = findClosestDirection(
       presence.heading.degrees,
       panoLinks,
@@ -48,7 +52,7 @@ export class StreetViewWorld implements World {
       return createObeyingMovementResult();
     }
 
-    const newHeading = bestMatchLink.heading;
+    const newHeading = bestMatchLink.link.heading;
     const newPosition: { latitude: number; longitude: number } =
       computeDestinationPoint(
         { latitude: currentLat, longitude: currentLon },

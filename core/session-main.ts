@@ -8,9 +8,15 @@ import {
 } from "rxjs";
 import { combineLatestWith } from "rxjs/operators";
 import { speedStream } from "./bike-telemetry.ts";
-import { LatLong, Movement, Presence } from "./types.ts";
+import {
+  LatLong,
+  Movement,
+  Presence,
+  StreetViewLinkWithHeading,
+} from "./types.ts";
 import { roundPosition, roundTo } from "./utils.ts";
 import { World } from "./world/world.ts";
+import { signal } from "@preact/signals-core";
 
 const nackaReservSaltsjo = {
   position: [59.2848213, 18.2077248] satisfies LatLong,
@@ -36,9 +42,7 @@ export const directionSource = new BehaviorSubject<number>(startDirection).pipe(
   debounce(() => interval(1000)),
 );
 
-export const streetViewLinks = new BehaviorSubject<
-  google.maps.StreetViewLink[]
->([]);
+export const streetViewLinks = signal<StreetViewLinkWithHeading[]>([]);
 
 export const trip = speedStream
   .pipe(
@@ -48,7 +52,7 @@ export const trip = speedStream
     // Provide last + previous speed/timestamp tuple to get deltas
     pairwise(),
     // take(speeds.length - 1),
-    combineLatestWith(worldSource, directionSource, streetViewLinks),
+    combineLatestWith(worldSource, directionSource),
   )
   .subscribe(([[prev, next], world, direction]) => {
     console.log("[trip] update", { speed: { prev, next }, direction });
@@ -66,12 +70,13 @@ export const trip = speedStream
       timeDelta,
       distance: roundTo(distance, 2),
     });
+    const movementRequest = { presence: presence.value, movement };
     if (!world) {
       console.warn("[trip] No world - no movement, smh");
       return;
     }
     world
-      .handleMovement({ presence: presence.value, movement })
+      .handleMovement(movementRequest)
       .then((result) => {
         console.log("[trip world] result", {
           before: roundPosition(presence.value.position),

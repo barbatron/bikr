@@ -14,3 +14,12 @@ export type Presence<
 > = Position<TCoords> & Heading<TDirection>;
 
 export type Movement = DistanceMeters & Heading;
+
+export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
+  heading: number;
+};
+
+export type NewHeadingResult = {
+  minDiff: number;
+  link: StreetViewLinkWithHeading;
+} | null;

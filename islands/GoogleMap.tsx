@@ -1,5 +1,4 @@
 // @deno-types="npm:@types/google.maps"
-import { Signal } from "npm:@preact/signals-core";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { distinctUntilChanged, withLatestFrom } from "rxjs";
 import { speedStream, triggerSpeed } from "../core/bike-telemetry.ts";
@@ -8,8 +7,11 @@ import {
   startPresence,
   streetViewLinks,
 } from "../core/session-main.ts";
-import { LatLong, Presence } from "../core/types.ts";
-import { findClosestDirection } from "../core/world/streetview-utils.ts";
+import { LatLong } from "../core/types.ts";
+import {
+  findClosestDirection,
+  toValidLinks,
+} from "../core/world/streetview-utils.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 
 const presenceWithSpeed = presence.pipe(
@@ -106,16 +108,15 @@ export default function GoogleMap(
     function handleNewLinks(
       this: google.maps.StreetViewPanorama,
     ) {
-      const links = this.getLinks();
+      const links = toValidLinks(this.getLinks());
+      const bestLink = findClosestDirection(tripDirection, links);
       console.log("Got new links", {
-        headings: links?.map((l) => l?.heading),
+        headings: links.map((l) => l.heading),
         currentHeading: this.getPov().heading,
+        bestLink: bestLink?.link.heading,
+        minDiff: bestLink?.minDiff,
       });
-      streetViewLinks.next(
-        (links ?? []).filter((l) => !!l && l !== null).map(
-          (l) => l as google.maps.StreetViewLink,
-        ),
-      );
+      streetViewLinks.value = links;
     }
 
     function handlePanoPresenceUpdate(this: google.maps.StreetViewPanorama) {

@@ -1,23 +1,26 @@
-type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
-  heading: number;
-};
-type NewHeadingResult = {
-  minDiff: number;
-  link: StreetViewLinkWithHeading;
-} | null;
+import { NewHeadingResult, StreetViewLinkWithHeading } from "../types.ts";
+import { diffHeading } from "../utils.ts";
+
+export const toValidLinks = (
+  links:
+    | (google.maps.StreetViewLink | StreetViewLinkWithHeading | null)[]
+    | null,
+): StreetViewLinkWithHeading[] =>
+  (links ?? []).filter((l) => typeof l?.heading === "number").map(
+    (l) => l as StreetViewLinkWithHeading,
+  );
 
 export function findClosestDirection(
   currentDirection: number,
-  links: google.maps.StreetViewLink[],
-): StreetViewLinkWithHeading | null {
-  const validLinks = links.filter((l) => typeof l?.heading === "number").map(
-    (l) => l as StreetViewLinkWithHeading,
-  );
-  const newHeadingResult: NewHeadingResult = validLinks.reduce(
+  links:
+    | (google.maps.StreetViewLink | StreetViewLinkWithHeading | null)[]
+    | null,
+): NewHeadingResult {
+  const validLinks = toValidLinks(links);
+  return validLinks.reduce(
     // @ts-ignore deno buggy confuse
     (acc, link) => {
-      // Calculate the difference between currentDirection and the link heading, taking into account that 355 degrees is close to 0 degrees:
-      const diff = Math.abs(link.heading - currentDirection) % 360;
+      const diff = diffHeading(currentDirection, link.heading);
       if (!acc || diff < acc.minDiff) {
         return { minDiff: diff, link };
       }
@@ -28,10 +31,6 @@ export function findClosestDirection(
       link: StreetViewLinkWithHeading;
     } | null,
   );
-  if (!newHeadingResult) {
-    return null;
-  }
-  return newHeadingResult.link;
 }
 
 export function googleLatLongToLiteral(
