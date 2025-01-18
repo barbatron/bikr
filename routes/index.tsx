@@ -16,13 +16,19 @@ export default function Home() {
     <GoogleMapsLibraryContext
       apiKey={API_KEY}
     >
-      <GoogleMap
-        mapId={MAP_ID}
-        lat={lat}
-        lng={lng}
-        startDirection={startDirection}
-        zoomLevel={18}
-      />
+      <GoogleMapsRouteContext
+        startAt={bikeRoute.routeStart}
+        endAt={bikeRoute.routeEnd}
+      >
+        <GoogleMap
+          mapId={MAP_ID}
+          lat={lat}
+          lng={lng}
+          startDirection={startDirection}
+          zoomLevel={18}
+        >
+        </GoogleMap>
+      </GoogleMapsRouteContext>
     </GoogleMapsLibraryContext>
   );
 }

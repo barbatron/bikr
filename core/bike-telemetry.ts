@@ -3,7 +3,6 @@ import { Buffer } from "node:buffer";
 import mqtt from "npm:mqtt";
 import { BehaviorSubject, map, Subject } from "npm:rxjs";
 import { filter, mergeWith } from "npm:rxjs/operators";
-import { merge } from "rxjs";
 
 const url = IS_BROWSER
   ? "mqtt://homeassistant.saltet.jolsson.info:1884"
@@ -17,7 +16,7 @@ const client = mqtt.connect(url, {
 const speedTopic = "homeassistant/sensor/spinboi_speed/state";
 
 client.on("connect", () => {
-  console.log("connected");
+  console.log("[biketel] connected");
   client.subscribe(speedTopic, (err) => {
     if (!err) {
       // client.publish("presence", "Hello mqtt");
@@ -29,7 +28,7 @@ client.on("connect", () => {
 });
 
 client.on("error", (err) => {
-  console.error("error", err);
+  console.error("[biketel] error", err);
 });
 
 const messageSource = new Subject<[string, Buffer]>();

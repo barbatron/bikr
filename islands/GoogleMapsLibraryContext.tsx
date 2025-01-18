@@ -1,9 +1,8 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { ComponentChildren, createContext } from "preact";
 import { useState } from "preact/hooks";
-import { bikeRoute, worldSource } from "../core/session-main.ts";
+import { worldSource } from "../core/session-main.ts";
 import { StreetViewWorld } from "../core/world/streetview-world.ts";
-import GoogleMapsRouteContext from "./GoogleMapsRouteContext.tsx";
 
 interface GoogleMapsLibraryContextProps {
   children: ComponentChildren;
@@ -36,16 +35,8 @@ export default function GoogleMapsProvider(
         src={`https://maps.googleapis.com/maps/api/js?key=${props.apiKey}&libraries=maps,marker,streetView,routes`}
         crossorigin=""
       />
-      {/* Provide context to children */}
       <googleMapsContext.Provider value={googleMaps}>
-        {!googleMaps ? <p>Loading Google Maps...</p> : (
-          <GoogleMapsRouteContext
-            startAt={bikeRoute.routeStart}
-            endAt={bikeRoute.routeEnd}
-          >
-            {props.children}
-          </GoogleMapsRouteContext>
-        )}
+        {!googleMaps ? <p>Loading Google Maps...</p> : props.children}
       </googleMapsContext.Provider>
     </>
   );
