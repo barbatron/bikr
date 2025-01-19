@@ -101,7 +101,7 @@ export default function GoogleMap(
       clickToGo: false,
       addressControl: false,
     };
-    console.log("[gm[ Got map, creating panorama", {
+    console.log("[gm] Got map, creating panorama", {
       panoRef: panoRef.current,
       settings,
     });
