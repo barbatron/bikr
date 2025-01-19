@@ -71,6 +71,8 @@ export default function GoogleMap(
     null | google.maps.StreetViewPanorama
   >(null);
 
+  const [panoStr, setPanoStr] = useState<string | null>(null);
+
   // Map initialization
   useEffect(() => {
     if (!mapRef.current) return;
@@ -133,6 +135,7 @@ export default function GoogleMap(
         return;
       }
       const pov = this.getPov();
+      setPanoStr(this.getPano());
       // Check if same as trip position and heading
       const tripPos = tripPosLatLng;
       const tripDir = tripDirection;
@@ -241,31 +244,33 @@ export default function GoogleMap(
         <span style={{ margin: "0.5em", minWidth: "20em" }}>
           map_pos: {mapPos}
         </span>
-        {
-          /* <span style={{ margin: "0.5em", minWidth: "10em" }}>
-          speed: {speed.toFixed(1)}
-        </span> */
-        }
+
+        <span style={{ margin: "0.5em", minWidth: "10em" }}>
+          speed: {/*speed.toFixed(1)*/ "???"}
+        </span>
+
         <span style={{ margin: "0.5em", minWidth: "10em" }}>
           dir: {trip.heading.degrees.toFixed(2)}
         </span>
-        {
-          <span style={{ margin: "0.5em" }}>
-            dirs: {streetViewLinks.value.map((l) => {
-              const fmt = closestLink?.link.pano == l.pano
-                ? "oblique"
-                : "normal";
-              return (
-                <span
-                  key={l.pano ?? ""}
-                  style={{ marginRight: "0.5em", fontStyle: fmt }}
-                >
-                  {(l.heading ?? -1).toFixed(2).padEnd(8)}
-                </span>
-              );
-            })}
-          </span>
-        }
+
+        <span style={{ margin: "0.5em" }}>
+          dirs: {streetViewLinks.value.map((l) => {
+            const fmt = closestLink?.link.pano == l.pano ? "oblique" : "normal";
+            return (
+              <span
+                key={l.pano ?? ""}
+                style={{ marginRight: "0.5em", fontStyle: fmt }}
+              >
+                {(l.heading ?? -1).toFixed(2).padEnd(8)}
+              </span>
+            );
+          })}
+        </span>
+
+        <span style={{ margin: "0.5em", minWidth: "10em" }}>
+          pano: {panoStr ?? "???"}
+        </span>
+
         <button
           class="bg-gray-700"
           style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
