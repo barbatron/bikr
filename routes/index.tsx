@@ -2,9 +2,6 @@ import { bikeRoute } from "../core/session-main.ts";
 import GoogleMap from "../islands/GoogleMap.tsx";
 import GoogleMapsLibraryContext from "../islands/GoogleMapsLibraryContext.tsx";
 import GoogleMapsRouteContext from "../islands/GoogleMapsRouteContext.tsx";
-// import mockDirectionsResult from "../testdata/gm-route.json" with {
-//   type: "json",
-// };
 
 export default function Home() {
   const API_KEY = Deno.env.get("GOOGLE_MAP_API_KEY")!;
@@ -15,9 +12,8 @@ export default function Home() {
       apiKey={API_KEY}
     >
       <GoogleMapsRouteContext
-        startAt={bikeRoute.routeStart}
+        startAt={bikeRoute.routeStart.pos}
         endAt={bikeRoute.routeEnd}
-        // mockData={mockDirectionsResult}
       >
         <GoogleMap
           mapId={MAP_ID}

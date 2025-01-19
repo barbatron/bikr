@@ -1,7 +1,7 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { ComponentChildren, createContext } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { worldSource } from "../core/session-main.ts";
+import { bikeRoute, worldSource } from "../core/session-main.ts";
 import { LatLong } from "../core/types.ts";
 import {
   createMapsApiLinksResolver,
@@ -21,7 +21,7 @@ type GoogleMapsRouteContext = { status: "loading" } | {
   error: unknown;
 } | {
   status: "loaded";
-  route: google.maps.DirectionsRoute | null;
+  route: google.maps.DirectionsResult;
 };
 
 export const googleMapsRouteContext = createContext<GoogleMapsRouteContext>({
@@ -59,7 +59,7 @@ export default function GoogleMapsRouteContext(
         console.log(`[gmrc] Got ${result.routes.length} routes`, result.routes);
         if (result.routes.length) {
           setValue(
-            { route: result.routes[0], status: "loaded" },
+            { route: result, status: "loaded" },
           );
         } else {
           setValue({
@@ -80,12 +80,12 @@ export default function GoogleMapsRouteContext(
   useEffect(() => {
     if (value.status !== "loaded") return;
     console.log("[gmrc] Route loaded", value.route);
-    const startLoc = value.route!.legs[0].start_location;
+    const startLoc = value.route.routes[0].legs[0].start_location;
     const initialPosition = [
       startLoc.lat()!,
       startLoc.lng()!,
     ] satisfies LatLong;
-    const initialDirection = 90; // TODO
+    const initialDirection = bikeRoute.routeStart.dir;
     const sv = new google.maps.StreetViewService();
     worldSource.next(
       new StreetViewWorld(

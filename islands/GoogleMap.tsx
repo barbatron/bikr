@@ -13,6 +13,8 @@ import {
   toValidLinks,
 } from "../core/world/streetview-utils.ts";
 import { useObservable } from "../hooks/useObservable.ts";
+import { useContext } from "preact/hooks";
+import { googleMapsRouteContext } from "./GoogleMapsRouteContext.tsx";
 
 // const presenceWithSpeed = presence.pipe(
 //   withLatestFrom(speedStream),
@@ -44,7 +46,7 @@ export default function GoogleMap(
   }: GoogleMapProps,
 ) {
   console.log("[gm] Render", { mapId, zoomLevel });
-
+  const route = useContext(googleMapsRouteContext);
   const trip = useObservable(
     presence,
     {
@@ -77,13 +79,25 @@ export default function GoogleMap(
   useEffect(() => {
     if (!mapRef.current) return;
     console.log("[gm] Got mapref", mapRef.current);
+    const hasRoute = Boolean(route?.status);
     const newMap = new google.maps.Map(mapRef.current, {
       center: tripPosLatLng,
       heading: tripDirection,
       zoom: zoomLevel,
       mapId,
       colorScheme: google.maps.ColorScheme.DARK,
+      streetViewControl: false,
+      ...(hasRoute && { tilt: 75 }),
     });
+    if (hasRoute) {
+      new google.maps.DirectionsRenderer({
+        map: newMap,
+        preserveViewport: true,
+        draggable: false,
+        routeIndex: 0,
+        directions: route.route,
+      });
+    }
     setMap(newMap);
   }, [mapRef.current]);
 
@@ -100,6 +114,7 @@ export default function GoogleMap(
         heading: tripDirection,
         pitch: 0,
       },
+
       clickToGo: false,
       addressControl: false,
     };
@@ -227,8 +242,9 @@ export default function GoogleMap(
   ]);
 
   return (
-    <>
+    <div class="flex flex-col" style={{ height: "100vh" }}>
       <div
+        id="status"
         style={{
           display: "flex",
           flexDirection: "row",
@@ -280,15 +296,15 @@ export default function GoogleMap(
         </button>
       </div>
       <div
-        style={{ height: "80vh", width: "100%" }}
+        style={{ height: "70vh" }}
         ref={panoRef}
         id="pano"
       />
       <div
-        style={{ height: "20vh", width: "100%" }}
+        class="flex-grow"
         ref={mapRef}
         id="map"
       />
-    </>
+    </div>
   );
 }

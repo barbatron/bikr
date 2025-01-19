@@ -20,9 +20,12 @@ import {
 import { World } from "./world/world.ts";
 import { TestWorld } from "./world/test-world.ts";
 
+// deno-lint-ignore no-unused-vars
+const flatenStart = { pos: { lat: 59.2618299, lng: 18.1304439 }, dir: 90 };
+const nackaStart = { pos: { lat: 59.2848213, lng: 18.2077248 }, dir: 270 };
+
 export const bikeRoute = {
-  routeStart: { lat: 59.2618299, lng: 18.1304439 },
-  startDir: 112,
+  routeStart: nackaStart,
   routeEnd: "Tyresö Centrum, 135 40 Tyresö",
 };
 
@@ -32,10 +35,10 @@ export const bikeRoute = {
 // };
 
 export const startPosition = [
-  bikeRoute.routeStart.lat,
-  bikeRoute.routeStart.lng,
+  bikeRoute.routeStart.pos.lat,
+  bikeRoute.routeStart.pos.lng,
 ] satisfies LatLong;
-export const startDirection = bikeRoute.startDir;
+export const startDirection = bikeRoute.routeStart.dir;
 
 export const worldSource = new BehaviorSubject<
   World<Presence<LatLong, AngleDegrees>> | null
