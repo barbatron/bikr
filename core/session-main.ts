@@ -44,6 +44,7 @@ export const worldSource = new BehaviorSubject<
 export const presence = worldSource
   .pipe(
     filter((world) => world !== null),
+    tap((w) => console.log("[presence] Got world", w)),
     switchMap((world) => world.createPresence()),
   );
 
