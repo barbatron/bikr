@@ -28,9 +28,6 @@ export default function GoogleMapsProvider(
         onLoad={() => {
           console.log("[gmlc] Loaded script", { hasCurrent: !!googleMaps });
           if (!googleMaps) setGoogleMaps(google.maps);
-          worldSource.next(
-            new StreetViewWorld(new google.maps.StreetViewService()),
-          );
         }}
         src={`https://maps.googleapis.com/maps/api/js?key=${props.apiKey}&libraries=maps,marker,streetView,routes`}
         crossorigin=""

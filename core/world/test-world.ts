@@ -1,39 +1,39 @@
-import { computeDestinationPoint, isPointInPolygon } from "geolib";
-import { LatLong, Movement } from "../types.ts";
-import { MovementRequest, MovementResult, World } from "./world.ts";
+import { computeDestinationPoint } from "geolib";
+import { BehaviorSubject } from "rxjs";
+import { AngleDegrees, LatLong, Presence } from "../types.ts";
+import { MovementRequest, World } from "./world.ts";
 
 type WorldBounds = LatLong[];
+type TestSpecific = { timestamp: number; index: number };
+type TestPresence = Presence<LatLong, AngleDegrees, TestSpecific>;
 
-export class TestWorld implements World {
-  constructor(public readonly bounds: Readonly<WorldBounds>) {}
+export class TestWorld implements World<TestPresence> {
+  presence: BehaviorSubject<TestPresence>;
+  constructor(public readonly bounds?: Readonly<WorldBounds>) {
+    this.presence = new BehaviorSubject({
+      position: [0, 0] satisfies LatLong,
+      heading: { degrees: 0 },
+      world: { timestamp: Date.now(), index: 0 },
+    });
+  }
+
+  createPresence() {
+    return this.presence.asObservable();
+  }
 
   handleMovement(
-    movementRequest: MovementRequest,
-  ): Promise<MovementResult> {
-    const { presence, movement } = movementRequest;
-    const { meters } = movement;
-    const newHeading = movement.hasOwnProperty("heading")
-      ? movement.heading
-      : null;
-    const headingDegrees = newHeading?.degrees ?? presence.heading.degrees;
-    const [lat, lon] = presence.position;
+    movement: MovementRequest,
+  ) {
+    // const { presence, movement } = movementRequest;
+    const prevPresence = this.presence.value;
+
+    const headingDegrees = prevPresence.heading.degrees;
+    const [lat, lon] = prevPresence.position;
     const newPosition = computeDestinationPoint(
       { lat, lon },
       movement.meters,
       headingDegrees,
     );
-
-    if (
-      isPointInPolygon(
-        newPosition,
-        this.bounds.map(([lat, lon]) => ({ lat, lon })),
-      )
-    ) {
-      console.log("Is within bounds");
-    } else {
-      console.warn("Is outside bounds");
-      return Promise.resolve(null);
-    }
 
     const newPositionLatLong: LatLong = [
       newPosition.latitude,
@@ -42,14 +42,22 @@ export class TestWorld implements World {
     const newPresence = {
       position: newPositionLatLong,
       heading: { degrees: headingDegrees },
+      world: { timestamp: Date.now(), index: prevPresence.world.index + 1 },
     };
-    const movementActual: Movement = {
-      meters,
-      heading: { degrees: headingDegrees },
-    };
-    return Promise.resolve({
-      movementActual,
-      presence: newPresence,
+
+    const posDiff = Math.sqrt(
+      Math.pow(newPresence.position[0] - prevPresence.position[0], 2) +
+        Math.pow(newPresence.position[1] - prevPresence.position[1], 2),
+    );
+    const dirDiff = newPresence.heading.degrees - prevPresence.heading.degrees;
+
+    console.log("[tw] handleMovement", {
+      movement,
+      prevPresence,
+      newPresence,
+      posDiff,
+      dirDiff,
     });
+    this.presence.next(newPresence);
   }
 }

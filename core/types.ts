@@ -8,12 +8,19 @@ export type DistanceMeters = { meters: number };
 export type Heading<T = AngleDegrees> = { heading: T };
 export type Position<T = LatLong> = { position: T };
 
+const emptyObj = {};
+type Empty = typeof emptyObj;
+
 export type Presence<
   TCoords = LatLong,
   TDirection = AngleDegrees,
-> = Position<TCoords> & Heading<TDirection>;
+  TWorldSpecific = Empty,
+> = {
+  position: TCoords;
+  heading: TDirection;
+} & (TWorldSpecific extends never ? Empty : { world: TWorldSpecific });
 
-export type Movement = DistanceMeters & Heading;
+export type Movement = DistanceMeters; // & Heading;
 
 export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
   heading: number;

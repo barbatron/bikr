@@ -1,13 +1,18 @@
 // World features:
 
+import { Observable } from "npm:rxjs";
 import { Movement, Presence } from "../types.ts";
 
-export type MovementRequest = { presence: Presence; movement: Movement };
+export type MovementRequest = Movement;
+
 export type MovementResult = {
   movementActual: Movement;
   presence: Presence;
 } | null;
 
-export interface World {
-  handleMovement: (movementRequest: MovementRequest) => Promise<MovementResult>;
+export interface World<TPresence extends Presence> {
+  handleMovement: (
+    movementRequest: MovementRequest,
+  ) => void | Promise<MovementResult | void>;
+  createPresence: () => Observable<TPresence>;
 }

@@ -1,10 +1,10 @@
 // @deno-types="npm:@types/google.maps"
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { distinctUntilChanged, withLatestFrom } from "rxjs";
-import { speedStream, triggerSpeed } from "../core/bike-telemetry.ts";
+import { triggerSpeed } from "../core/bike-telemetry.ts";
 import {
   presence,
-  startPresence,
+  startDirection,
+  startPosition,
   streetViewLinks,
 } from "../core/session-main.ts";
 import { LatLong } from "../core/types.ts";
@@ -14,17 +14,20 @@ import {
 } from "../core/world/streetview-utils.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 
-const presenceWithSpeed = presence.pipe(
-  withLatestFrom(speedStream),
-  distinctUntilChanged(
-    ([prevPresence, prevSpeed], [currPresence, currSpeed]) => {
-      return prevPresence.position[0] === currPresence.position[0] &&
-        prevPresence.position[1] === currPresence.position[1] &&
-        prevPresence.heading.degrees === currPresence.heading.degrees &&
-        prevSpeed === currSpeed;
-    },
-  ),
-);
+// const presenceWithSpeed = presence.pipe(
+//   withLatestFrom(speedStream),
+//   distinctUntilChanged(
+//     ([prevPresence, prevSpeed], [currPresence, currSpeed]) => {
+//       return prevPresence.position[0] === currPresence.position[0] &&
+//         prevPresence.position[1] === currPresence.position[1] &&
+//         prevPresence.heading.degrees === currPresence.heading.degrees &&
+//         prevSpeed === currSpeed;
+//     },
+//   ),
+// );
+
+const posToStr = (pos: (number | undefined)[]) =>
+  `(${pos.map((x) => x?.toFixed(5).padStart(10)).join(", ")})`;
 
 export type GoogleMapProps = {
   mapId: string;
@@ -42,9 +45,13 @@ export default function GoogleMap(
 ) {
   console.log("[gm] Render", { mapId, zoomLevel });
 
-  const [trip, speed] = useObservable(
-    presenceWithSpeed,
-    [startPresence, 0.0],
+  const trip = useObservable(
+    presence,
+    {
+      position: startPosition,
+      heading: { degrees: startDirection },
+      world: {},
+    },
   );
 
   const tripPosLatLng = useMemo<google.maps.LatLngLiteral>(
@@ -211,8 +218,6 @@ export default function GoogleMap(
     streetViewLinks.value,
   );
   const mapC = (map as google.maps.Map)?.getCenter();
-  const posToStr = (pos: (number | undefined)[]) =>
-    `(${pos.map((x) => x?.toFixed(5).padStart(10)).join(", ")})`;
   const mapPos = useMemo(() => posToStr([mapC?.lat(), mapC?.lng()]), [
     mapC?.lat(),
     mapC?.lng(),
@@ -236,25 +241,31 @@ export default function GoogleMap(
         <span style={{ margin: "0.5em", minWidth: "20em" }}>
           map_pos: {mapPos}
         </span>
-        <span style={{ margin: "0.5em", minWidth: "10em" }}>
+        {
+          /* <span style={{ margin: "0.5em", minWidth: "10em" }}>
           speed: {speed.toFixed(1)}
-        </span>
+        </span> */
+        }
         <span style={{ margin: "0.5em", minWidth: "10em" }}>
           dir: {trip.heading.degrees.toFixed(2)}
         </span>
-        <span style={{ margin: "0.5em" }}>
-          dirs: {streetViewLinks.value.map((l) => {
-            const fmt = closestLink?.pano == l.pano ? "oblique" : "normal";
-            return (
-              <span
-                key={l.pano ?? ""}
-                style={{ marginRight: "0.5em", fontStyle: fmt }}
-              >
-                {(l.heading ?? -1).toFixed(2).padEnd(8)}
-              </span>
-            );
-          })}
-        </span>
+        {
+          <span style={{ margin: "0.5em" }}>
+            dirs: {streetViewLinks.value.map((l) => {
+              const fmt = closestLink?.link.pano == l.pano
+                ? "oblique"
+                : "normal";
+              return (
+                <span
+                  key={l.pano ?? ""}
+                  style={{ marginRight: "0.5em", fontStyle: fmt }}
+                >
+                  {(l.heading ?? -1).toFixed(2).padEnd(8)}
+                </span>
+              );
+            })}
+          </span>
+        }
         <button
           class="bg-gray-700"
           style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}

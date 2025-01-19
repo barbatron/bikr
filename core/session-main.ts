@@ -1,42 +1,51 @@
+import { signal } from "@preact/signals-core";
 import {
   BehaviorSubject,
   debounce,
   interval,
-  map,
   pairwise,
-  throttle,
-} from "rxjs";
-import { combineLatestWith } from "rxjs/operators";
+  scan,
+  timeInterval,
+} from "npm:rxjs";
+import { combineLatestWith, map, switchMap, tap } from "npm:rxjs/operators";
+import { filter } from "rxjs";
 import { speedStream } from "./bike-telemetry.ts";
 import {
+  AngleDegrees,
   LatLong,
   Movement,
   Presence,
   StreetViewLinkWithHeading,
 } from "./types.ts";
-import { roundPosition, roundTo } from "./utils.ts";
 import { World } from "./world/world.ts";
-import { signal } from "@preact/signals-core";
-
-const nackaReservSaltsjo = {
-  position: [59.2848213, 18.2077248] satisfies LatLong,
-  heading: 90,
-};
-export const startPosition = nackaReservSaltsjo.position;
-export const startDirection = nackaReservSaltsjo.heading;
+import { TestWorld } from "./world/test-world.ts";
 
 export const bikeRoute = {
-  routeStart: { lat: 59.261776, lng: 18.130394 },
+  routeStart: { lat: 59.2618299, lng: 18.1304439 },
+  startDir: 112,
   routeEnd: "Tyresö Centrum, 135 40 Tyresö",
 };
 
-export const startPresence: Readonly<Presence> = {
-  position: startPosition,
-  heading: { degrees: startDirection },
-};
-export const presence = new BehaviorSubject<Presence>(startPresence);
+// const nackaReservSaltsjo = {
+//   position: [59.2848213, 18.2077248] satisfies LatLong,
+//   heading: 90,
+// };
 
-export const worldSource = new BehaviorSubject<World | null>(null);
+export const startPosition = [
+  bikeRoute.routeStart.lat,
+  bikeRoute.routeStart.lng,
+] satisfies LatLong;
+export const startDirection = bikeRoute.startDir;
+
+export const worldSource = new BehaviorSubject<
+  World<Presence<LatLong, AngleDegrees>> | null
+>(null);
+
+export const presence = worldSource
+  .pipe(
+    filter((world) => world !== null),
+    switchMap((world) => world.createPresence()),
+  );
 
 export const directionSource = new BehaviorSubject<number>(startDirection).pipe(
   debounce(() => interval(1000)),
@@ -44,54 +53,58 @@ export const directionSource = new BehaviorSubject<number>(startDirection).pipe(
 
 export const streetViewLinks = signal<StreetViewLinkWithHeading[]>([]);
 
-export const trip = speedStream
-  .pipe(
-    throttle(() => interval(1000)),
-    // Attach timestamps
-    map((speed) => ({ speed, timestamp: new Date() })),
-    // Provide last + previous speed/timestamp tuple to get deltas
-    pairwise(),
-    // take(speeds.length - 1),
-    combineLatestWith(worldSource, directionSource),
-  )
-  .subscribe(([[prev, next], world, direction]) => {
-    console.log("[trip] update", { speed: { prev, next }, direction });
-    const avgSpeedMetersPerSecond = next.speed / 3.6; // km/h -> m/s
-    const timeDeltaMillis = next.timestamp.getTime() - prev.timestamp.getTime();
-    const timeDelta = timeDeltaMillis / 1000;
-    const distance = avgSpeedMetersPerSecond * (timeDelta < 5 ? timeDelta : 1);
-
-    const movement: Movement = {
-      meters: roundTo(distance, 2),
-      heading: { degrees: direction },
-    };
-    console.log("[trip] calculated speed/timedelta/distance", {
-      avgSpeed: avgSpeedMetersPerSecond,
-      timeDelta,
-      distance: roundTo(distance, 2),
-    });
-    const movementRequest = { presence: presence.value, movement };
-    if (!world) {
-      console.warn("[trip] No world - no movement, smh");
-      return;
-    }
-    world
-      .handleMovement(movementRequest)
-      .then((result) => {
-        console.log("[trip world] result", {
-          before: roundPosition(presence.value.position),
-          after: result?.presence?.position &&
-            roundPosition(result?.presence?.position),
-        });
-        if (!result) {
-          console.log("[trip world] no result - no movement");
-          return;
-        }
-        console.log("[trip world] back to presence");
-        presence.next(result.presence);
+const distanceSource = speedStream.pipe(
+  timeInterval(), // Get time since last emit
+  scan((acc, curr) => {
+    if (curr.interval > 3000) {
+      console.log("[distance] Too long since last update - ignoring update", {
+        acc,
+        curr,
       });
-  });
+      return acc;
+    }
+    const speed = curr.value;
+    const speedMps = speed / 3.6; // km/h -> m/s
+    const distanceMeters = speedMps * curr.interval / 1000;
+    console.log("[distance] Distance", {
+      distanceMeters,
+      speed,
+      speedMps,
+      interval: curr.interval,
+    });
+    return acc + distanceMeters;
+  }, 0),
+);
 
-presence.subscribe((presence) => {
-  console.log("[presence]", presence);
+export const movementSource = distanceSource
+  .pipe(
+    tap((dist) => console.log("[trip] Distance", dist)),
+    pairwise(),
+    map(([prevDistance, totalDistance]) => {
+      const distance = totalDistance - prevDistance;
+      console.log("[trip] update", {
+        distance,
+        prevDistance,
+        totalDistance,
+      });
+      const movement: Movement = {
+        meters: distance,
+      };
+      return movement;
+    }),
+  );
+
+const testWorld = new TestWorld();
+
+movementSource.pipe(
+  tap((movement) => console.log("[trip] Movement", movement)),
+  combineLatestWith(worldSource),
+).subscribe(([movement, world]) => {
+  if (!world) {
+    console.log(
+      "[movement -> world] No world to handle movement - sending to test world",
+      movement,
+    );
+  }
+  (world ?? testWorld).handleMovement(movement);
 });

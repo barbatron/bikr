@@ -1,4 +1,4 @@
-import { of } from "rxjs";
+import { of } from "npm:rxjs";
 
 export type BikeIntrinsicProperties = {
   weightKilos: number;

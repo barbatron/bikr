@@ -1,0 +1,263 @@
+{
+  "geocoded_waypoints": [
+    {
+      "geocoder_status": "OK",
+      "place_id": "ChIJdRc0ZQd5X0YRZlwqixco7aE",
+      "types": [
+        "establishment",
+        "point_of_interest",
+        "transit_station"
+      ]
+    },
+    {
+      "geocoder_status": "OK",
+      "partial_match": true,
+      "place_id": "ChIJXa6dJQV_X0YRyuMddBn0sxY",
+      "types": [
+        "establishment",
+        "point_of_interest",
+        "shopping_mall"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "bounds": {
+        "northeast": {
+          "lat": 59.26389929999999,
+          "lng": 18.22939
+        },
+        "southwest": {
+          "lat": 59.2424564,
+          "lng": 18.1304439
+        }
+      },
+      "copyrights": "Map data ©2025 Google",
+      "legs": [
+        {
+          "distance": {
+            "text": "7.8 km",
+            "value": 7752
+          },
+          "duration": {
+            "text": "28 mins",
+            "value": 1673
+          },
+          "end_address": "135 40 Tyresö, Sweden",
+          "end_location": {
+            "lat": 59.2443298,
+            "lng": 18.22939
+          },
+          "start_address": "Orhems vägskäl, 128 65 Sköndal, Sweden",
+          "start_location": {
+            "lat": 59.2618299,
+            "lng": 18.1304439
+          },
+          "steps": [
+            {
+              "distance": {
+                "text": "3.1 km",
+                "value": 3117
+              },
+              "duration": {
+                "text": "11 mins",
+                "value": 630
+              },
+              "end_location": {
+                "lat": 59.2512606,
+                "lng": 18.1678162
+              },
+              "html_instructions": "Head \u003cb\u003esoutheast\u003c/b\u003e on \u003cb\u003eFlatenvägen\u003c/b\u003e toward \u003cb\u003eOrhemsvägen\u003c/b\u003e",
+              "polyline": {
+                "points": "mquhJgbtmBHi@@ID]J{@RuBDSDy@@ABk@Dw@@m@B{@?iA?}@?sAC_A?UEyAGmAAKCa@Eo@KaAGq@G_@Io@G_@O}@Mm@Q{@Sy@EMYeAKYc@mAKW[o@qAiCGMIOSg@MWKYCKOi@Ia@Q_ACKO_AEe@Em@Ag@?G?CAoA?s@FeA@WDc@?C?ADa@Fi@@OBO?CBO@IFYF]Jg@@GJi@XoANw@\\aBJk@Ns@d@kCx@eFN}@TyAHc@^}Bd@yCPgAPuAHg@D_@@MFu@Dk@BWFq@@OHy@Fy@L{AH{@HoAH_AJmAP_BJy@NgANcABMn@uDBMZuABKPs@Ps@\\sAJ_@?CDQDODOT{@h@sB\\oA|@mDJ_@XeAb@eBBIPm@@CNc@DMBIHSFS@ADITk@R]FMVa@@CJOLQNQHKHGFGDCHAHC`@SXEH?NARBJ?NAPFFBDDB@B@FDFFJHFFX\\HH\\`@RR@@HHHJTTBBNNHF@BTPBDFBLJDDJHB@PJZRPJB@PHD@TLXJJDHBJBF@HBF@B?@@D?B?R@`@?VILENILGRKXQROXWl@i@RUV[V]^i@Ta@LWBG@EDK@CNc@J_@DMRs@@EPy@@CJe@XmAPe@p@mC"
+              },
+              "start_location": {
+                "lat": 59.2618299,
+                "lng": 18.1304439
+              },
+              "travel_mode": "BICYCLING"
+            },
+            {
+              "distance": {
+                "text": "0.4 km",
+                "value": 427
+              },
+              "duration": {
+                "text": "3 mins",
+                "value": 178
+              },
+              "end_location": {
+                "lat": 59.25179539999999,
+                "lng": 18.1750147
+              },
+              "html_instructions": "Continue onto \u003cb\u003eÄltavägen\u003c/b\u003e/\u003cwbr/\u003e\u003cb\u003eRoute 260\u003c/b\u003e",
+              "polyline": {
+                "points": "koshJ{k{mBJc@Ju@@IBOBSB]Dy@@M@]?g@?o@Ao@Em@Ek@KyACQKuA]gE?A?AS}BEa@Y{DIeAGm@Iy@CW"
+              },
+              "start_location": {
+                "lat": 59.2512606,
+                "lng": 18.1678162
+              },
+              "travel_mode": "BICYCLING"
+            },
+            {
+              "distance": {
+                "text": "1.4 km",
+                "value": 1401
+              },
+              "duration": {
+                "text": "5 mins",
+                "value": 277
+              },
+              "end_location": {
+                "lat": 59.24811560000001,
+                "lng": 18.1911483
+              },
+              "html_instructions": "Turn \u003cb\u003eright\u003c/b\u003e onto \u003cb\u003eÄltabergsvägen\u003c/b\u003e",
+              "maneuver": "turn-right",
+              "polyline": {
+                "points": "wrshJyx|mB^Oj@YFAVGFC@?B?HCJAF?@?B?@?\\Dx@H^BZBH@HAn@GTGPGHELIPOLKBA@ALOJM@?LQLU@C@CVa@NYh@eAf@}@v@wA`@u@^o@BEb@u@x@oA`@_@h@k@RSVYLONUVq@FQHSBKDQPwBHcAHcAFaAFo@FmADs@DoA?Q?Q?O?S?O?EAUAUAUAOASAKAICQSsAGe@Ko@KaAS{BIeC?MCMAO?KAOCSC[AQ?AAKCOCOOu@K[EOg@sBQk@g@qB_@sAEMQm@ESQk@IYKYYq@EMAAWo@"
+              },
+              "start_location": {
+                "lat": 59.25179539999999,
+                "lng": 18.1750147
+              },
+              "travel_mode": "BICYCLING"
+            },
+            {
+              "distance": {
+                "text": "27 m",
+                "value": 27
+              },
+              "duration": {
+                "text": "1 min",
+                "value": 5
+              },
+              "end_location": {
+                "lat": 59.2483348,
+                "lng": 18.1913369
+              },
+              "html_instructions": "Slight \u003cb\u003eleft\u003c/b\u003e to stay on \u003cb\u003eÄltabergsvägen\u003c/b\u003e",
+              "maneuver": "turn-slight-left",
+              "polyline": {
+                "points": "w{rhJu}_nBi@e@"
+              },
+              "start_location": {
+                "lat": 59.24811560000001,
+                "lng": 18.1911483
+              },
+              "travel_mode": "BICYCLING"
+            },
+            {
+              "distance": {
+                "text": "0.1 km",
+                "value": 143
+              },
+              "duration": {
+                "text": "1 min",
+                "value": 45
+              },
+              "end_location": {
+                "lat": 59.24748880000001,
+                "lng": 18.1930113
+              },
+              "html_instructions": "At the roundabout, take the \u003cb\u003e1st\u003c/b\u003e exit onto \u003cb\u003eTöresjövägen\u003c/b\u003e",
+              "maneuver": "roundabout-right",
+              "polyline": {
+                "points": "a}rhJ{~_nB@A@??A@A@A?C@A?A@C?A?C?C@E?C@C?C?C?C?C?C?C?CAC?C?CV_BT]\\e@FG`@g@b@e@"
+              },
+              "start_location": {
+                "lat": 59.2483348,
+                "lng": 18.1913369
+              },
+              "travel_mode": "BICYCLING"
+            },
+            {
+              "distance": {
+                "text": "0.6 km",
+                "value": 563
+              },
+              "duration": {
+                "text": "3 mins",
+                "value": 150
+              },
+              "end_location": {
+                "lat": 59.2427359,
+                "lng": 18.1954811
+              },
+              "html_instructions": "At the roundabout, take the \u003cb\u003e1st\u003c/b\u003e exit onto \u003cb\u003eSkrubba Malmväg\u003c/b\u003e",
+              "maneuver": "roundabout-right",
+              "polyline": {
+                "points": "ywrhJii`nB@@@@@@@@@@@?B?@@@?@?BA@?BA@AB?@A@A@CBAP?D@TFH?@?@?B?@?BALINM^a@h@m@hAkAHILKHIFG?A^_@\\a@ZY\\]FGLKFIFE@APOPMJGDEHEBABCPIZQd@O^ONC@?NELCZERCZC\\AT@D?fAVHB"
+              },
+              "start_location": {
+                "lat": 59.24748880000001,
+                "lng": 18.1930113
+              },
+              "travel_mode": "BICYCLING"
+            },
+            {
+              "distance": {
+                "text": "2.0 km",
+                "value": 1973
+              },
+              "duration": {
+                "text": "5 mins",
+                "value": 315
+              },
+              "end_location": {
+                "lat": 59.243547,
+                "lng": 18.2287919
+              },
+              "html_instructions": "At the roundabout, take the \u003cb\u003e2nd\u003c/b\u003e exit onto \u003cb\u003eBollmoravägen\u003c/b\u003e\u003cdiv style=\"font-size:0.9em\"\u003eGo through 1 roundabout\u003c/div\u003e",
+              "maneuver": "roundabout-right",
+              "polyline": {
+                "points": "czqhJwx`nB@B?@?B@B?@@B?@@@?B@@@@?@@@@@@??@@@@?@?@@@?@?@??A@?@?@A@A@??A@A@A@A?A@C?A@C@C?A?C@C?A?C?C?A?C?C?C?C?CAC?A?CAC?AAA?CAAAA?AAAAAImAAOAIAm@CsB?W?WBeAAk@@k@?G?I?IAI?G?CEm@@A?A@A?A@C?A?A@C?A?A?A?C?A?C?A?C?A?A?C?C?AAA?C?AAA?AAA?AAA?AAAAAAACe@EaAEc@AcAAeAAuAKeFKiICyACeAIoEA_AAm@AgAAq@?e@?c@?[?G?y@?]@g@?gC@cD@qE?e@?_A?}@B}I?gA@OA{@?CAm@?kA@mA?q@?o@A}@?E?Q?_B?_CA_E?SBS?A@yI?i@?EA_@@UJ{BBk@PoDB]FaB?K?_@FO@G?G?kA?iCAwAAYAUC{@Ce@Ey@Gm@UuCI_AGm@E]?EKk@O}@Qw@Ic@GY?CI[I_@?CKc@"
+              },
+              "start_location": {
+                "lat": 59.2427359,
+                "lng": 18.1954811
+              },
+              "travel_mode": "BICYCLING"
+            },
+            {
+              "distance": {
+                "text": "0.1 km",
+                "value": 101
+              },
+              "duration": {
+                "text": "1 min",
+                "value": 73
+              },
+              "end_location": {
+                "lat": 59.2443298,
+                "lng": 18.22939
+              },
+              "html_instructions": "Turn \u003cb\u003eleft\u003c/b\u003e onto \u003cb\u003eMyggdalsvägen\u003c/b\u003e",
+              "maneuver": "turn-left",
+              "polyline": {
+                "points": "e_rhJ}hgnBIJa@CA?Q@E?CCCCAA]o@[k@EIKQ"
+              },
+              "start_location": {
+                "lat": 59.243547,
+                "lng": 18.2287919
+              },
+              "travel_mode": "BICYCLING"
+            }
+          ],
+          "traffic_speed_entry": [],
+          "via_waypoint": []
+        }
+      ],
+      "overview_polyline": {
+        "points": "mquhJgbtmB\\mC`@eEHcBDiB?gCCsCOiE]eEi@mDs@cDk@mBo@eBmByDs@}Ai@qBUkAUeBGaBAcCFeAFaAXiCpB{JZ_B~AqJnAyHv@aFZ}BNcB|@qKRoC\\mDn@sEr@cE^aBlA{ElDcNlAuEh@cBVs@v@aBr@gAj@m@NEj@Wb@Eb@@ZAXJTNZXtA|AjAlAn@f@f@\\bAj@`A`@z@PV@`@?VI\\O`@Sl@a@fAaAj@q@v@gAh@gAb@sAl@aCLi@XmAPe@|@qDL_AP{BBcCG}AQeCm@qHs@}I_@eEjAi@^IVGXAxBRd@Dx@If@OVOd@_@h@o@h@_AxCuFhBaDx@oA`@_@|@_Ad@i@NUVq@Pe@H]l@aIZaG?gACaAGeAa@uCWqBS{BIeCC[A[KqAIm@iAuEsCgKm@{AWo@i@e@BABIBIBa@?OAGVcB|AsBb@e@@@BBHBH?TMV@^FH?PKn@o@jCoCpCuC^]t@k@b@U`Aa@n@Sz@On@Gr@?lAVJF@JHRLFLEHSBYA]ISOiBEqEBeDAe@Cu@BI@UAUEQCCEg@KeBCiCYeSSoLEmE?aCDgVDuLCyD?eJA_IBg@@kK?u@NgD\\{H?_@FO@OCgIOqDo@qHQoAs@sDScAKc@IJc@CW@GGaAgBKQ"
+      },
+      "summary": "Flatenvägen",
+      "warnings": [
+        "Bicycling directions are in beta. Use caution – This route may contain streets that aren't suited for bicycling."
+      ],
+      "waypoint_order": []
+    }
+  ],
+  "status": "OK"
+}

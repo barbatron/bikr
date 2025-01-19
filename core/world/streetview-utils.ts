@@ -1,4 +1,8 @@
-import { NewHeadingResult, StreetViewLinkWithHeading } from "../types.ts";
+import {
+  LatLong,
+  NewHeadingResult,
+  StreetViewLinkWithHeading,
+} from "../types.ts";
 import { diffHeading } from "../utils.ts";
 
 export const toValidLinks = (
@@ -33,8 +37,12 @@ export function findClosestDirection(
   );
 }
 
-export function googleLatLongToLiteral(
-  latLng: google.maps.LatLng | google.maps.LatLngLiteral,
+export function toGoogleLatLongLiteral(
+  latLng: google.maps.LatLng | google.maps.LatLngLiteral | LatLong,
 ): google.maps.LatLngLiteral {
+  if (latLng instanceof Array) {
+    // Is LatLong
+    return { lat: latLng[0], lng: latLng[1] };
+  }
   return latLng instanceof google.maps.LatLng ? latLng.toJSON() : latLng;
 }

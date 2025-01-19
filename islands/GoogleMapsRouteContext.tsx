@@ -1,11 +1,19 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
-import { useEffect, useState } from "preact/hooks";
 import { ComponentChildren, createContext } from "preact";
+import { useEffect, useState } from "preact/hooks";
+import { worldSource } from "../core/session-main.ts";
+import { LatLong } from "../core/types.ts";
+import {
+  createMapsApiLinksResolver,
+  StreetViewWorld,
+} from "../core/world/streetview-world.ts";
 
 type GoogleMapsRouteContextProps = {
   startAt: google.maps.DirectionsRequest["origin"];
   endAt: google.maps.DirectionsRequest["destination"];
   children: ComponentChildren;
+  // deno-lint-ignore no-explicit-any
+  mockData?: any;
 };
 
 type GoogleMapsRouteContext = { status: "loading" } | {
@@ -21,7 +29,7 @@ export const googleMapsRouteContext = createContext<GoogleMapsRouteContext>({
 });
 
 export default function GoogleMapsRouteContext(
-  { startAt, endAt, children }: GoogleMapsRouteContextProps,
+  { startAt, endAt, children, mockData }: GoogleMapsRouteContextProps,
 ) {
   if (!IS_BROWSER) {
     return (
@@ -32,10 +40,13 @@ export default function GoogleMapsRouteContext(
   console.log("[gmrc] Load route", { startAt, endAt });
 
   const [value, setValue] = useState<GoogleMapsRouteContext>(
-    { status: "loading" },
+    !mockData
+      ? { status: "loading" }
+      : { status: "loaded", route: mockData[0] },
   );
 
   useEffect(() => {
+    if (value.status !== "loading") return; // TODO: Test helper, remove
     const svc = new google.maps.DirectionsService();
     let cancelled = false;
     svc.route({
@@ -45,7 +56,7 @@ export default function GoogleMapsRouteContext(
     })
       .then((result) => {
         if (cancelled) return;
-        console.log(`[gmrc] Got ${result.routes.length} routes`);
+        console.log(`[gmrc] Got ${result.routes.length} routes`, result.routes);
         if (result.routes.length) {
           setValue(
             { route: result.routes[0], status: "loaded" },
@@ -66,9 +77,29 @@ export default function GoogleMapsRouteContext(
     };
   }, [JSON.stringify(startAt), JSON.stringify(endAt)]);
 
+  useEffect(() => {
+    if (value.status !== "loaded") return;
+    console.log("[gmrc] Route loaded", value.route);
+    const startLoc = value.route!.legs[0].start_location;
+    const initialPosition = [
+      startLoc.lat()!,
+      startLoc.lng()!,
+    ] satisfies LatLong;
+    const initialDirection = 90; // TODO
+    const sv = new google.maps.StreetViewService();
+    worldSource.next(
+      new StreetViewWorld(
+        sv,
+        initialPosition,
+        initialDirection,
+        createMapsApiLinksResolver(sv),
+        50,
+      ),
+    );
+  });
   return (
     <googleMapsRouteContext.Provider value={value}>
-      {children}
+      {value.status === "loaded" ? children : <p>Loading route...</p>}
     </googleMapsRouteContext.Provider>
   );
 }
