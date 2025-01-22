@@ -47,7 +47,7 @@ const bikeSpeedSource = messageSource.pipe(
   map(([_, message]) => parseFloat(message.toString())),
 );
 
-export const speedStream = merge(bikeSpeedSource, manualSpeedSource);
+export const speedSourceKph = merge(bikeSpeedSource, manualSpeedSource);
 
 export const triggerSpeed = (speedKph: number) => {
   console.log("[biketel] triggerSpeed", speedKph);

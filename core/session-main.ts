@@ -1,7 +1,7 @@
 import { BehaviorSubject, pairwise, scan, timeInterval } from "npm:rxjs";
 import { combineLatestWith, map, switchMap, tap } from "npm:rxjs/operators";
 import { filter } from "rxjs";
-import { speedStream } from "./bike-telemetry.ts";
+import { speedSourceKph } from "./bike-telemetry.ts";
 import { AngleDegrees, LatLong, Movement, Presence, World } from "./types.ts";
 import { TestWorld } from "./world/test-world.ts";
 
@@ -32,22 +32,25 @@ export const presence = worldSource
     switchMap((world) => world.createPresence()),
   );
 
-const distanceSource = speedStream.pipe(
+const distanceSource = speedSourceKph.pipe(
   timeInterval(), // Get time since last emit
   scan((acc, curr) => {
     if (curr.interval > 3000) {
-      console.log("[distance] Too long since last update - ignoring update", {
-        acc,
-        curr,
-      });
+      console.log(
+        "[distanceSource] Too long since last update - ignoring update",
+        {
+          acc,
+          curr,
+        },
+      );
       return acc;
     }
-    const speed = curr.value;
-    const speedMps = speed / 3.6; // km/h -> m/s
+    const speedKph = curr.value;
+    const speedMps = speedKph / 3.6; // km/h -> m/s
     const distanceMeters = speedMps * curr.interval / 1000;
-    console.log("[distance] Distance", {
+    console.log("[distanceSource] Distance", {
       distanceMeters,
-      speed,
+      speedKph,
       speedMps,
       interval: curr.interval,
     });
@@ -57,11 +60,11 @@ const distanceSource = speedStream.pipe(
 
 export const movementSource = distanceSource
   .pipe(
-    tap((dist) => console.log("[trip] Distance", dist)),
+    tap((dist) => console.log("[movementSource] Distance", dist)),
     pairwise(),
     map(([prevDistance, totalDistance]) => {
       const distance = totalDistance - prevDistance;
-      console.log("[trip] update", {
+      console.log("[movementSource] update", {
         distance,
         prevDistance,
         totalDistance,
@@ -75,6 +78,7 @@ export const movementSource = distanceSource
 
 const testWorld = new TestWorld();
 
+// Hook up movement to world
 movementSource.pipe(
   tap((movement) => console.log("[trip] Movement", movement)),
   combineLatestWith(worldSource),
