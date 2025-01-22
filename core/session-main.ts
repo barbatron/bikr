@@ -60,17 +60,16 @@ const distanceSource = speedSourceKph.pipe(
 
 export const movementSource = distanceSource
   .pipe(
-    tap((dist) => console.log("[movementSource] Distance", dist)),
     pairwise(),
     map(([prevDistance, totalDistance]) => {
-      const distance = totalDistance - prevDistance;
-      console.log("[movementSource] update", {
-        distance,
+      const distanceMeters = totalDistance - prevDistance;
+      console.log("[movementSource] distance update", {
+        distanceMeters,
         prevDistance,
         totalDistance,
       });
       const movement: Movement = {
-        meters: distance,
+        meters: distanceMeters,
       };
       return movement;
     }),
@@ -80,7 +79,7 @@ const testWorld = new TestWorld();
 
 // Hook up movement to world
 movementSource.pipe(
-  tap((movement) => console.log("[trip] Movement", movement)),
+  tap((movement) => console.log("[movement -> world] Movement", movement)),
   combineLatestWith(worldSource),
 ).subscribe(([movement, world]) => {
   if (!world) {
