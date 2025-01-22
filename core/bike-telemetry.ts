@@ -47,7 +47,16 @@ const bikeSpeedSource = messageSource.pipe(
   map(([_, message]) => parseFloat(message.toString())),
 );
 
-export const speedSourceKph = merge(bikeSpeedSource, manualSpeedSource);
+export const speedSourceKph = merge(bikeSpeedSource, manualSpeedSource).pipe(
+  filter((speed) => {
+    const isValid = speed >= 0 && speed < 100;
+    if (!isValid) {
+      console.warn("[biketel] Rejecting crazy speed", speed);
+      return false;
+    }
+    return true;
+  }),
+);
 
 export const triggerSpeed = (speedKph: number) => {
   console.log("[biketel] triggerSpeed", speedKph);
