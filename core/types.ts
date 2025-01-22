@@ -32,8 +32,6 @@ export type MovementResult = {
 } | null;
 
 export interface World<TPresence extends Presence> {
-  handleMovement: (
-    movementRequest: MovementRequest,
-  ) => void | Promise<MovementResult | void>;
   createPresence: () => Observable<TPresence>;
+  consume(movements: Observable<Movement>): void;
 }

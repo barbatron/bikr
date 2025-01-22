@@ -1,8 +1,9 @@
 import { computeDestinationPoint, getPreciseDistance } from "geolib";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Observable } from "rxjs";
 import {
   AngleDegrees,
   LatLong,
+  Movement,
   MovementRequest,
   Presence,
   World,
@@ -26,7 +27,12 @@ export class TestWorld implements World<TestPresence> {
     return this.presence.asObservable();
   }
 
-  handleMovement(
+  consume(movements: Observable<Movement>) {
+    movements
+      .subscribe((movement) => this.handleMovement(movement));
+  }
+
+  private handleMovement(
     movement: MovementRequest,
   ) {
     const prevPresence = this.presence.value;

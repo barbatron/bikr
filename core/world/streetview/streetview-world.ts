@@ -1,8 +1,9 @@
 import { computeDestinationPoint } from "geolib";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, bufferTime, map, Observable } from "rxjs";
 import {
   AngleDegrees,
   LatLong,
+  Movement,
   MovementRequest,
   Presence,
   World,
@@ -74,7 +75,19 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
     return this.presenceSource.asObservable();
   }
 
-  async handleMovement(
+  consume(movements: Observable<Movement>) {
+    movements
+      .pipe(
+        // buffer & sum up movements to prevent spamming map api (todo: move to sv world)
+        bufferTime(1000),
+        map((movements) => ({
+          meters: movements.reduce((acc, curr) => acc + curr.meters, 0),
+        })),
+      )
+      .subscribe((movement) => this.handleMovement(movement));
+  }
+
+  private async handleMovement(
     movement: MovementRequest,
   ) {
     const presence = this.presenceSource.value; // Hacky
