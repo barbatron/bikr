@@ -16,7 +16,7 @@ export class TestWorld implements World<TestPresence> {
   presence: BehaviorSubject<TestPresence>;
   constructor(public readonly bounds?: Readonly<WorldBounds>) {
     this.presence = new BehaviorSubject({
-      position: [0, 0] satisfies LatLong,
+      position: [0, 0],
       heading: { degrees: 0 },
       world: { timestamp: Date.now(), index: 0 },
     });

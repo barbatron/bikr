@@ -1,11 +1,4 @@
-import {
-  BehaviorSubject,
-  debounce,
-  interval,
-  pairwise,
-  scan,
-  timeInterval,
-} from "npm:rxjs";
+import { BehaviorSubject, pairwise, scan, timeInterval } from "npm:rxjs";
 import { combineLatestWith, map, switchMap, tap } from "npm:rxjs/operators";
 import { filter } from "rxjs";
 import { speedStream } from "./bike-telemetry.ts";
@@ -38,10 +31,6 @@ export const presence = worldSource
     tap((w) => console.log("[presence] Got world", w)),
     switchMap((world) => world.createPresence()),
   );
-
-export const directionSource = new BehaviorSubject<number>(startDirection).pipe(
-  debounce(() => interval(1000)),
-);
 
 const distanceSource = speedStream.pipe(
   timeInterval(), // Get time since last emit
