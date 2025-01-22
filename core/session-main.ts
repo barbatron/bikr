@@ -1,4 +1,3 @@
-import { signal } from "@preact/signals-core";
 import {
   BehaviorSubject,
   debounce,
@@ -10,14 +9,7 @@ import {
 import { combineLatestWith, map, switchMap, tap } from "npm:rxjs/operators";
 import { filter } from "rxjs";
 import { speedStream } from "./bike-telemetry.ts";
-import {
-  AngleDegrees,
-  LatLong,
-  Movement,
-  Presence,
-  StreetViewLinkWithHeading,
-} from "./types.ts";
-import { World } from "./world/world.ts";
+import { AngleDegrees, LatLong, Movement, Presence, World } from "./types.ts";
 import { TestWorld } from "./world/test-world.ts";
 
 // deno-lint-ignore no-unused-vars
@@ -54,8 +46,6 @@ export const presence = worldSource
 export const directionSource = new BehaviorSubject<number>(startDirection).pipe(
   debounce(() => interval(1000)),
 );
-
-export const streetViewLinks = signal<StreetViewLinkWithHeading[]>([]);
 
 const distanceSource = speedStream.pipe(
   timeInterval(), // Get time since last emit

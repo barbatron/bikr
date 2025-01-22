@@ -1,19 +1,17 @@
-// @deno-types="npm:@types/google.maps"
 import { computeDestinationPoint } from "geolib";
 import { BehaviorSubject } from "rxjs";
-import { streetViewLinks } from "../session-main.ts";
 import {
   AngleDegrees,
   LatLong,
+  MovementRequest,
   Presence,
-  StreetViewLinkWithHeading,
-} from "../types.ts";
+  World,
+} from "../../types.ts";
 import {
   findClosestDirection,
+  StreetViewLinkResolver,
   toGoogleLatLongLiteral,
-  toValidLinks,
 } from "./streetview-utils.ts";
-import { MovementRequest, World } from "./world.ts";
 
 type GoogleStreetViewPresenceWorldData = { pano: string };
 type GoogleStreetViewPresence = Presence<
@@ -22,37 +20,13 @@ type GoogleStreetViewPresence = Presence<
   GoogleStreetViewPresenceWorldData
 >;
 
-export type StreetViewLinkResolver = {
-  (position: LatLong): Promise<StreetViewLinkWithHeading[]>;
-};
-
-export const signalLinksResolver: StreetViewLinkResolver = () => {
-  return Promise.resolve(streetViewLinks.value);
-};
-export const createMapsApiLinksResolver =
-  (streetViewService: google.maps.StreetViewService): StreetViewLinkResolver =>
-  (position) => {
-    const latLng = toGoogleLatLongLiteral(position);
-    return new Promise((res) => {
-      streetViewService.getPanorama({
-        location: latLng,
-        preference: google.maps.StreetViewPreference.NEAREST,
-      }, (data, status) => {
-        if (status !== google.maps.StreetViewStatus.OK) {
-          return [];
-        }
-        res(toValidLinks(data!.links!));
-      });
-    });
-  };
-
 export class StreetViewWorld implements World<GoogleStreetViewPresence> {
   private readonly presenceSource: BehaviorSubject<GoogleStreetViewPresence>;
   public constructor(
     public readonly sv: google.maps.StreetViewService,
     private readonly initialPosition: LatLong,
     private readonly initialHeading: number,
-    private readonly linkResolver: StreetViewLinkResolver = signalLinksResolver,
+    private readonly linkResolver: StreetViewLinkResolver,
     public readonly searchRadius = 50,
   ) {
     this.presenceSource = new BehaviorSubject<GoogleStreetViewPresence>(

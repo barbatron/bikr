@@ -1,4 +1,5 @@
 import { bikeRoute } from "../core/session-main.ts";
+import { streetViewLinks } from "../core/world/streetview/index.ts";
 import GoogleMap from "../islands/GoogleMap.tsx";
 import GoogleMapsLibraryContext from "../islands/GoogleMapsLibraryContext.tsx";
 import GoogleMapsRouteContext from "../islands/GoogleMapsRouteContext.tsx";
@@ -18,6 +19,7 @@ export default function Home() {
         <GoogleMap
           mapId={MAP_ID}
           zoomLevel={18}
+          streetViewLinks={streetViewLinks}
         >
         </GoogleMap>
       </GoogleMapsRouteContext>

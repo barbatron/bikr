@@ -6,7 +6,7 @@ import { LatLong } from "../core/types.ts";
 import {
   createMapsApiLinksResolver,
   StreetViewWorld,
-} from "../core/world/streetview-world.ts";
+} from "../core/world/streetview/index.ts";
 
 type GoogleMapsRouteContextProps = {
   startAt: google.maps.DirectionsRequest["origin"];

@@ -1,7 +1,12 @@
 import { computeDestinationPoint } from "geolib";
 import { BehaviorSubject } from "rxjs";
-import { AngleDegrees, LatLong, Presence } from "../types.ts";
-import { MovementRequest, World } from "./world.ts";
+import {
+  AngleDegrees,
+  LatLong,
+  MovementRequest,
+  Presence,
+  World,
+} from "../types.ts";
 
 type WorldBounds = LatLong[];
 type TestSpecific = { timestamp: number; index: number };

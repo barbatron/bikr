@@ -1,9 +1,14 @@
-import {
-  LatLong,
-  NewHeadingResult,
-  StreetViewLinkWithHeading,
-} from "../types.ts";
-import { diffHeading } from "../utils.ts";
+import { LatLong } from "../../types.ts";
+import { diffHeading } from "../../utils.ts";
+
+export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
+  heading: number;
+};
+
+export type NewHeadingResult = {
+  minDiff: number;
+  link: StreetViewLinkWithHeading;
+} | null;
 
 export const toValidLinks = (
   links:
@@ -46,3 +51,24 @@ export function toGoogleLatLongLiteral(
   }
   return latLng instanceof google.maps.LatLng ? latLng.toJSON() : latLng;
 }
+
+export type StreetViewLinkResolver = {
+  (position: LatLong): Promise<StreetViewLinkWithHeading[]>;
+};
+
+export const createMapsApiLinksResolver =
+  (streetViewService: google.maps.StreetViewService): StreetViewLinkResolver =>
+  (position) => {
+    const latLng = toGoogleLatLongLiteral(position);
+    return new Promise((res) => {
+      streetViewService.getPanorama({
+        location: latLng,
+        preference: google.maps.StreetViewPreference.NEAREST,
+      }, (data, status) => {
+        if (status !== google.maps.StreetViewStatus.OK) {
+          return [];
+        }
+        res(toValidLinks(data!.links!));
+      });
+    });
+  };

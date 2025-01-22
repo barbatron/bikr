@@ -1,32 +1,19 @@
-// @deno-types="npm:@types/google.maps"
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { Signal } from "@preact/signals-core";
+import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { triggerSpeed } from "../core/bike-telemetry.ts";
 import {
   presence,
   startDirection,
   startPosition,
-  streetViewLinks,
 } from "../core/session-main.ts";
 import { LatLong } from "../core/types.ts";
 import {
   findClosestDirection,
+  StreetViewLinkWithHeading,
   toValidLinks,
-} from "../core/world/streetview-utils.ts";
+} from "../core/world/streetview/index.ts";
 import { useObservable } from "../hooks/useObservable.ts";
-import { useContext } from "preact/hooks";
 import { googleMapsRouteContext } from "./GoogleMapsRouteContext.tsx";
-
-// const presenceWithSpeed = presence.pipe(
-//   withLatestFrom(speedStream),
-//   distinctUntilChanged(
-//     ([prevPresence, prevSpeed], [currPresence, currSpeed]) => {
-//       return prevPresence.position[0] === currPresence.position[0] &&
-//         prevPresence.position[1] === currPresence.position[1] &&
-//         prevPresence.heading.degrees === currPresence.heading.degrees &&
-//         prevSpeed === currSpeed;
-//     },
-//   ),
-// );
 
 const posToStr = (pos: (number | undefined)[]) =>
   `(${pos.map((x) => x?.toFixed(5).padStart(10)).join(", ")})`;
@@ -35,6 +22,7 @@ export type GoogleMapProps = {
   mapId: string;
   zoomLevel: number;
   marker?: LatLong;
+  streetViewLinks: Signal<StreetViewLinkWithHeading[]> | undefined;
   // mapsRoute?: Signal<google.maps.DirectionsRoute[] | null>;
 };
 
@@ -43,6 +31,7 @@ export default function GoogleMap(
     mapId,
     zoomLevel,
     // mapsRoute,
+    streetViewLinks,
   }: GoogleMapProps,
 ) {
   console.log("[gm] Render", { mapId, zoomLevel });
@@ -79,7 +68,7 @@ export default function GoogleMap(
   useEffect(() => {
     if (!mapRef.current) return;
     console.log("[gm] Got mapref", mapRef.current);
-    const hasRoute = Boolean(route?.status);
+    const hasRoute = route?.status == "loaded";
     const newMap = new google.maps.Map(mapRef.current, {
       center: tripPosLatLng,
       heading: tripDirection,
@@ -140,7 +129,7 @@ export default function GoogleMap(
         bestLink: bestLink?.link.heading,
         minDiff: bestLink?.minDiff,
       });
-      streetViewLinks.value = links;
+      if (streetViewLinks) streetViewLinks.value = links;
     }
 
     function handlePanoPresenceUpdate(this: google.maps.StreetViewPanorama) {
@@ -231,10 +220,12 @@ export default function GoogleMap(
     } else console.warn("Could not set panorama position/pov");
   }, [tripPosLatLng, tripDirection, map]);
 
-  const closestLink = findClosestDirection(
-    tripDirection,
-    streetViewLinks.value,
-  );
+  const closestLink = streetViewLinks?.value
+    ? findClosestDirection(
+      tripDirection,
+      streetViewLinks.value,
+    )
+    : null;
   const mapC = (map as google.maps.Map)?.getCenter();
   const mapPos = useMemo(() => posToStr([mapC?.lat(), mapC?.lng()]), [
     mapC?.lat(),
@@ -270,7 +261,7 @@ export default function GoogleMap(
         </span>
 
         <span style={{ margin: "0.5em" }}>
-          dirs: {streetViewLinks.value.map((l) => {
+          dirs: {streetViewLinks?.value.map((l) => {
             const fmt = closestLink?.link.pano == l.pano ? "oblique" : "normal";
             return (
               <span
