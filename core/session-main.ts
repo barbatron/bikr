@@ -21,15 +21,11 @@ export const bikeRoute = {
   routeEnd: "Tyresö Centrum, 135 40 Tyresö",
 };
 
-// const nackaReservSaltsjo = {
-//   position: [59.2848213, 18.2077248] satisfies LatLong,
-//   heading: 90,
-// };
-
-export const startPosition = [
+export const startPosition: LatLong = [
   bikeRoute.routeStart.pos.lat,
   bikeRoute.routeStart.pos.lng,
-] satisfies LatLong;
+];
+
 export const startDirection = bikeRoute.routeStart.dir;
 
 export const worldSource = new BehaviorSubject<

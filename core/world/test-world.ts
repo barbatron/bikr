@@ -1,4 +1,4 @@
-import { computeDestinationPoint } from "geolib";
+import { computeDestinationPoint, getPreciseDistance } from "geolib";
 import { BehaviorSubject } from "rxjs";
 import {
   AngleDegrees,
@@ -29,7 +29,6 @@ export class TestWorld implements World<TestPresence> {
   handleMovement(
     movement: MovementRequest,
   ) {
-    // const { presence, movement } = movementRequest;
     const prevPresence = this.presence.value;
 
     const headingDegrees = prevPresence.heading.degrees;
@@ -44,15 +43,16 @@ export class TestWorld implements World<TestPresence> {
       newPosition.latitude,
       newPosition.longitude,
     ];
+
     const newPresence = {
       position: newPositionLatLong,
       heading: { degrees: headingDegrees },
       world: { timestamp: Date.now(), index: prevPresence.world.index + 1 },
     };
 
-    const posDiff = Math.sqrt(
-      Math.pow(newPresence.position[0] - prevPresence.position[0], 2) +
-        Math.pow(newPresence.position[1] - prevPresence.position[1], 2),
+    const posDiff = getPreciseDistance(
+      prevPresence.position,
+      newPositionLatLong,
     );
     const dirDiff = newPresence.heading.degrees - prevPresence.heading.degrees;
 
