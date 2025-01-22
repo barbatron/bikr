@@ -1,6 +1,6 @@
 import { BehaviorSubject, pairwise, scan, timeInterval } from "npm:rxjs";
 import { combineLatestWith, map, switchMap, tap } from "npm:rxjs/operators";
-import { filter } from "rxjs";
+import { bufferTime, filter } from "rxjs";
 import { speedSourceKph } from "./bike-telemetry.ts";
 import { AngleDegrees, LatLong, Movement, Presence, World } from "./types.ts";
 import { TestWorld } from "./world/test-world.ts";
@@ -23,13 +23,14 @@ export const startDirection = bikeRoute.routeStart.dir;
 
 export const worldSource = new BehaviorSubject<
   World<Presence<LatLong, AngleDegrees>> | null
->(null);
+>(new TestWorld())
+  .pipe(tap((w) => console.log("[worldSource] Got world", w)));
 
 export const presence = worldSource
   .pipe(
     filter((world) => world !== null),
-    tap((w) => console.log("[presence] Got world", w)),
     switchMap((world) => world.createPresence()),
+    tap((p) => console.log("[presence] Created presence", p)),
   );
 
 const distanceSource = speedSourceKph.pipe(
@@ -75,18 +76,13 @@ export const movementSource = distanceSource
     }),
   );
 
-const testWorld = new TestWorld();
-
 // Hook up movement to world
 movementSource.pipe(
   tap((movement) => console.log("[movement -> world] Movement", movement)),
+  // buffer & sum up movements to prevent spamming map api (todo: move to sv world)
+  bufferTime(1000),
+  map((movements) => ({
+    meters: movements.reduce((acc, curr) => acc + curr.meters, 0),
+  })),
   combineLatestWith(worldSource),
-).subscribe(([movement, world]) => {
-  if (!world) {
-    console.log(
-      "[movement -> world] No world to handle movement - sending to test world",
-      movement,
-    );
-  }
-  (world ?? testWorld).handleMovement(movement);
-});
+).subscribe(([movement, world]) => world?.handleMovement(movement));
