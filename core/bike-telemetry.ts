@@ -1,16 +1,19 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { Buffer } from "node:buffer";
+import { URL } from "node:url";
 import mqtt from "npm:mqtt";
 import { BehaviorSubject, map, merge, Subject } from "npm:rxjs";
 import { filter } from "npm:rxjs/operators";
 
-const url = IS_BROWSER
-  ? "mqtt://homeassistant.saltet.jolsson.info:1884"
-  : "mqtt://homeassistant.saltet.jolsson.info:1883";
+const urlBase = new URL(Deno.env.get("MQTT_BROKER_URL")!);
+urlBase.port = IS_BROWSER
+  ? "1884" // websockets from browser
+  : "1883"; // something else from server
+const url = urlBase.toString();
 
 const client = mqtt.connect(url, {
-  username: "bikr",
-  password: "abc123",
+  username: Deno.env.get("MQTT_USERNAME")!,
+  password: Deno.env.get("MQTT_PASSWORD")!,
 });
 
 const speedTopic = "homeassistant/sensor/spinboi_speed/state";
