@@ -21,37 +21,42 @@ type GoogleStreetViewPresence = Presence<
   GoogleStreetViewPresenceWorldData
 >;
 
+interface RouteLike<TPos, THeading> {
+  getInitialPresence(): { position: TPos; heading: THeading };
+}
+
 export class StreetViewWorld implements World<GoogleStreetViewPresence> {
   private readonly presenceSource: BehaviorSubject<GoogleStreetViewPresence>;
   public constructor(
     public readonly sv: google.maps.StreetViewService,
-    private readonly initialPosition: LatLong,
-    private readonly initialHeading: number,
+    private readonly route: RouteLike<LatLong, AngleDegrees>,
     private readonly linkResolver: StreetViewLinkResolver,
     public readonly searchRadius = 50,
   ) {
+    const { position, heading } = route.getInitialPresence();
     this.presenceSource = new BehaviorSubject<GoogleStreetViewPresence>(
       {
-        position: initialPosition,
-        heading: { degrees: initialHeading },
+        position,
+        heading,
         world: { pano: "" },
       },
     );
   }
 
   createPresence() {
+    const initialPresence = this.route.getInitialPresence();
     console.log(
       "[sv] createPresence: getting panorama at initial position",
-      this.initialPosition,
+      initialPresence,
     );
     this.sv.getPanorama({
-      location: toGoogleLatLongLiteral(this.initialPosition),
+      location: toGoogleLatLongLiteral(initialPresence.position),
       preference: google.maps.StreetViewPreference.NEAREST,
     }, (data, status) => {
       if (status !== google.maps.StreetViewStatus.OK) {
         throw Error(
           "No panorama found at suggested position: " +
-            JSON.stringify(this.initialPosition),
+            JSON.stringify(initialPresence.position),
         );
       }
       const d = data!;
@@ -60,7 +65,7 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
         d.location!.latLng?.lng()!,
       ];
       const headingResult = findClosestDirection(
-        this.initialHeading,
+        initialPresence.heading.degrees,
         d.links!,
       );
       if (!headingResult) throw Error("No heading result");

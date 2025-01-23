@@ -90,8 +90,12 @@ export default function GoogleMapsRouteContext(
     worldSource.next(
       new StreetViewWorld(
         sv,
-        initialPosition,
-        initialDirection,
+        {
+          getInitialPresence: () => ({
+            position: initialPosition,
+            heading: { degrees: initialDirection },
+          }),
+        },
         createMapsApiLinksResolver(sv),
         50,
       ),
