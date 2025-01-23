@@ -10,7 +10,7 @@ import {
 } from "../types.ts";
 
 type WorldBounds = LatLong[];
-type TestSpecific = { timestamp: number; index: number };
+type TestSpecific = { timestamp: string; index: number };
 type TestPresence = Presence<LatLong, AngleDegrees, TestSpecific>;
 
 export class TestWorld implements World<TestPresence> {
@@ -19,7 +19,7 @@ export class TestWorld implements World<TestPresence> {
     this.presence = new BehaviorSubject({
       position: [0, 0],
       heading: { degrees: 0 },
-      world: { timestamp: Date.now(), index: 0 },
+      world: { timestamp: new Date().toISOString(), index: 0 },
     });
   }
 
@@ -53,7 +53,10 @@ export class TestWorld implements World<TestPresence> {
     const newPresence = {
       position: newPositionLatLong,
       heading: { degrees: headingDegrees },
-      world: { timestamp: Date.now(), index: prevPresence.world.index + 1 },
+      world: {
+        timestamp: new Date().toISOString(),
+        index: prevPresence.world.index + 1,
+      },
     };
 
     const posDiff = getPreciseDistance(

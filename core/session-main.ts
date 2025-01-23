@@ -26,10 +26,11 @@ const distanceSource = speedSourceKph.pipe(
   scan((acc, curr) => {
     if (curr.interval > 3000) {
       console.log(
-        "[distanceSource] Too long since last update - ignoring update",
+        "[distanceSource] Too long since last speed update - ignoring",
         {
-          acc,
-          curr,
+          totalDistance: acc,
+          timeSinceLast: curr.interval,
+          speedKph: curr.value,
         },
       );
       return acc;

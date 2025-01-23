@@ -1,4 +1,5 @@
 import type { Signal } from "@preact/signals-core";
+import { getPreciseDistance } from "geolib";
 import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { triggerSpeed } from "../core/bike-telemetry.ts";
 import {
@@ -143,10 +144,7 @@ export default function GoogleMap(
       // Check if same as trip position and heading
       const tripPos = tripPosLatLng;
       const tripDir = tripDirection;
-      const posDiff = Math.sqrt(
-        Math.pow(pos.lat() - tripPos.lat, 2) +
-          Math.pow(pos.lng() - tripPos.lng, 2),
-      );
+      const posDiff = getPreciseDistance(tripPos, pos.toJSON());
       const dirDiff = pov.heading - tripDir;
       console.log(
         "[gm] Pano pos/pov updated",
@@ -159,7 +157,7 @@ export default function GoogleMap(
         }),
       );
 
-      if (posDiff < 0.0001 && Math.abs(dirDiff) < 0.1) {
+      if (posDiff < 0.5 && Math.abs(dirDiff) < 0.1) {
         console.log("[gm] Pano position matches trip position", {
           posDiff,
           dirDiff,
