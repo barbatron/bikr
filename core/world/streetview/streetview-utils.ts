@@ -8,7 +8,7 @@ export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
 export type NewHeadingResult = {
   minDiff: number;
   link: StreetViewLinkWithHeading;
-} | null;
+};
 
 export const toValidLinks = (
   links:
@@ -19,15 +19,18 @@ export const toValidLinks = (
     (l) => l as StreetViewLinkWithHeading,
   );
 
-export function findClosestDirection(
-  currentDirection: number,
-  links:
+export function findClosestDirection<
+  TLinks extends
     | (google.maps.StreetViewLink | StreetViewLinkWithHeading | null)[]
     | null,
-): NewHeadingResult {
+>(
+  currentDirection: number,
+  links: TLinks,
+): TLinks extends StreetViewLinkWithHeading[] ? NewHeadingResult
+  : (NewHeadingResult | null) {
   const validLinks = toValidLinks(links);
+  // @ts-ignore - if we DID get SVLWH[] then we DEFINITELY will have a result with a link
   return validLinks.reduce(
-    // @ts-ignore deno buggy confuse
     (acc, link) => {
       const diff = diffHeading(currentDirection, link.heading);
       if (!acc || diff < acc.minDiff) {

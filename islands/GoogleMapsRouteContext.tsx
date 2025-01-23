@@ -1,8 +1,9 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { ComponentChildren, createContext } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { bikeRoute, worldSource } from "../core/session-main.ts";
+import { worldSource } from "../core/session-main.ts";
 import { LatLong } from "../core/types.ts";
+import { traverseSteps } from "../core/world/streetview/gm-route-tracker.ts";
 import {
   createMapsApiLinksResolver,
   StreetViewWorld,
@@ -80,12 +81,18 @@ export default function GoogleMapsRouteContext(
   useEffect(() => {
     if (value.status !== "loaded") return;
     console.log("[gmrc] Route loaded", value.route);
-    const startLoc = value.route.routes[0].legs[0].start_location;
+    const route = value.route.routes[0];
+    const steps = traverseSteps(route);
+    if (steps.length < 2) throw Error("Route has less than 2 steps");
+    const startLoc = steps[0].start_location;
     const initialPosition = [
       startLoc.lat()!,
       startLoc.lng()!,
     ] satisfies LatLong;
-    const initialDirection = bikeRoute.routeStart.dir;
+    const initialDirection = google.maps.geometry.spherical.computeHeading(
+      startLoc,
+      steps[1].start_location,
+    );
     const sv = new google.maps.StreetViewService();
     worldSource.next(
       new StreetViewWorld(
