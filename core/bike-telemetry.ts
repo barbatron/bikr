@@ -11,9 +11,18 @@ urlBase.port = IS_BROWSER
   : "1883"; // something else from server
 const url = urlBase.toString();
 
+const mqttConfig = {
+  urlBase: Deno.env.get("MQTT_BROKER_URL")!,
+  url,
+  username: Deno.env.get("MQTT_BROKER_USERNAME")!,
+  password: Deno.env.get("MQTT_BROKER_PASSWORD")!,
+};
+
+console.log("[biketel] connecting mqtt", { ...mqttConfig, password: "****" });
+
 const client = mqtt.connect(url, {
-  username: Deno.env.get("MQTT_USERNAME")!,
-  password: Deno.env.get("MQTT_PASSWORD")!,
+  username: Deno.env.get("MQTT_BROKER_USERNAME")!,
+  password: Deno.env.get("MQTT_BROKER_PASSWORD")!,
 });
 
 const speedTopic = "homeassistant/sensor/spinboi_speed/state";
