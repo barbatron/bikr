@@ -9,13 +9,12 @@ import {
   World,
 } from "../types.ts";
 
-type WorldBounds = LatLong[];
 type TestSpecific = { timestamp: string; index: number };
 type TestPresence = Presence<LatLong, AngleDegrees, TestSpecific>;
 
 export class TestWorld implements World<TestPresence> {
   presence: BehaviorSubject<TestPresence>;
-  constructor(public readonly bounds?: Readonly<WorldBounds>) {
+  constructor() {
     this.presence = new BehaviorSubject({
       position: [0, 0],
       heading: { degrees: 0 },
