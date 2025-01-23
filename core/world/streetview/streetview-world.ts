@@ -78,7 +78,8 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
   consume(movements: Observable<Movement>) {
     movements
       .pipe(
-        // buffer & sum up movements to prevent spamming map api (todo: move to sv world)
+        // Buffer & sum up movements to prevent spamming map api
+        // Should ideally be synchronized with the street view panorama updates?
         bufferTime(1000),
         map((movements) => ({
           meters: movements.reduce((acc, curr) => acc + curr.meters, 0),
