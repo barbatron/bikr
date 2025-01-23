@@ -75,3 +75,7 @@ export const createMapsApiLinksResolver =
       });
     });
   };
+
+export function traverseSteps(route: google.maps.DirectionsRoute) {
+  return route.legs.flatMap((leg) => leg.steps);
+}

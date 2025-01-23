@@ -5,7 +5,6 @@ import {
   LatLong,
   Movement,
   MovementRequest,
-  Presence,
   World,
 } from "../../types.ts";
 import {
@@ -13,17 +12,7 @@ import {
   StreetViewLinkResolver,
   toGoogleLatLongLiteral,
 } from "./streetview-utils.ts";
-
-type GoogleStreetViewPresenceWorldData = { pano: string };
-type GoogleStreetViewPresence = Presence<
-  LatLong,
-  AngleDegrees,
-  GoogleStreetViewPresenceWorldData
->;
-
-interface RouteLike<TPos, THeading> {
-  getInitialPresence(): { position: TPos; heading: THeading };
-}
+import { GoogleStreetViewPresence, RouteLike } from "./types.ts";
 
 export class StreetViewWorld implements World<GoogleStreetViewPresence> {
   private readonly presenceSource: BehaviorSubject<GoogleStreetViewPresence>;
