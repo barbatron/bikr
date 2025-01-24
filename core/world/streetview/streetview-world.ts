@@ -92,16 +92,34 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
     const [currentLat, currentLon] = presence.position;
 
     // Check if close to a route nav point
+    const junction = this.route.queryJunction(presence.position);
+    if (junction) {
+      console.log("[sv] Close to a route nav point!", junction);
+    }
 
     // If we're not close to a route nav point, use panorama links to determine direction:
     const panoLinks = await this.linkResolver(presence.position);
     if (!panoLinks || panoLinks.length === 0) {
       console.log("[sv] No links available!");
-      return;
+      return; // TODO: MOVE ANYWAY LOL
     }
 
+    const nextDirection = (junction && junction.junction.distance < 10)
+      ? junction.junction.turnDirection
+      : presence.heading.degrees;
+
+    console.log("[sv] Next direction determined", {
+      current: presence.heading.degrees,
+      ...(junction &&
+        {
+          junctionDistance: junction?.junction.distance,
+          junctionDirection: junction?.junction.turnDirection,
+        }),
+      nextDirection,
+    });
+
     const bestMatchLink = findClosestDirection(
-      presence.heading.degrees,
+      nextDirection,
       panoLinks,
     );
 
