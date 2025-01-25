@@ -21,7 +21,7 @@ type GoogleMapsRouteContext = { status: "loading" } | {
   error: unknown;
 } | {
   status: "loaded";
-  route: google.maps.DirectionsResult;
+  route: google.maps.DirectionsRoute;
 };
 
 export const googleMapsRouteContext = createContext<GoogleMapsRouteContext>({
@@ -53,21 +53,41 @@ export default function GoogleMapsRouteContext(
       origin: startAt,
       destination: endAt,
       travelMode: google.maps.TravelMode.BICYCLING,
-    })
-      .then((result) => {
-        if (cancelled) return;
-        console.log(`[gmrc] Got ${result.routes.length} routes`, result.routes);
-        if (result.routes.length) {
-          setValue(
-            { route: result, status: "loaded" },
+    }, function (result, status) {
+      if (cancelled) return;
+      switch (status) {
+        case google.maps.DirectionsStatus.OK: {
+          const routes = result!.routes;
+          console.log(
+            `[gmrc] Got ${routes.length} routes`,
+            routes,
           );
-        } else {
+          if (routes.length) {
+            setValue(
+              { route: routes[0], status: "loaded" },
+            );
+          } else {
+            setValue({
+              status: "error",
+              error: new Error("No routes in response: "),
+            });
+          }
+          break;
+        }
+        case google.maps.DirectionsStatus.INVALID_REQUEST:
+        case google.maps.DirectionsStatus.MAX_WAYPOINTS_EXCEEDED:
+        case google.maps.DirectionsStatus.NOT_FOUND:
+        case google.maps.DirectionsStatus.OVER_QUERY_LIMIT:
+        case google.maps.DirectionsStatus.REQUEST_DENIED:
+        case google.maps.DirectionsStatus.UNKNOWN_ERROR:
+        case google.maps.DirectionsStatus.ZERO_RESULTS:
           setValue({
             status: "error",
-            error: new Error("No routes in response"),
+            error: new Error(`Directions request failed: ${status}`),
           });
-        }
-      });
+          break;
+      }
+    });
 
     return () => {
       console.log("[gmrc] Cancel pending", {
@@ -79,8 +99,10 @@ export default function GoogleMapsRouteContext(
 
   useEffect(() => {
     if (value.status !== "loaded") return;
-    console.log("[gmrc] Route loaded", value.route);
-    const startLoc = value.route.routes[0].legs[0].start_location;
+    const { route } = value;
+
+    console.log("[gmrc] Route loaded", route);
+    const startLoc = route.legs[0].start_location;
     const initialPosition = [
       startLoc.lat()!,
       startLoc.lng()!,
