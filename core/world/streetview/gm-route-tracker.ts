@@ -93,7 +93,7 @@ export class GoogleMapsRouteTracker
       lastMatchIndex: this.lastMatchIndex,
     });
 
-    const junction = remainingSteps.find((stepEntry, i) => {
+    const stepWithDistance = remainingSteps.find((stepEntry, i) => {
       const step = stepEntry.step;
       const stepEnd = step.end_location;
       const distance = google.maps.geometry.spherical.computeDistanceBetween(
@@ -117,38 +117,39 @@ export class GoogleMapsRouteTracker
       }
     });
 
-    if (junction) {
-      const stepIndex = this.steps.indexOf(junction);
-      const nextStep = this.steps[stepIndex + 1];
-      if (!nextStep) {
-        console.warn("[gmrt] No next step found, route complete!");
-        return;
-      }
-      console.log("[gmrt] Next step", nextStep);
-      // Calculate bearing from current junction to next step's end location:
-      const direction = google.maps.geometry.spherical.computeHeading(
-        junction.end_location,
-        nextStep.end_location,
-      );
-      return {
-        query: {
-          position,
-          deviation,
-        },
-        junction: {
-          position: toGoogleLatLongLiteral(nextStep.start_location),
-          distance: google.maps.geometry.spherical.computeDistanceBetween(
-            new google.maps.LatLng(position),
-            nextStep.start_location,
-          ),
-          turnDirection: direction,
-          maneuver: nextStep.maneuver,
-          htmlInstructions: nextStep.instructions,
-        },
-        prevStep: junction,
-        nextStep: nextStep,
-      };
+    if (!stepWithDistance) return;
+    const { step: junction } = stepWithDistance;
+
+    const stepIndex = this.steps.indexOf(stepWithDistance);
+    const { step: nextStep } = this.steps[stepIndex + 1];
+    if (!nextStep) {
+      console.warn("[gmrt] No next step found, route complete!");
+      return;
     }
+    console.log("[gmrt] Next step", nextStep);
+    // Calculate bearing from current junction to next step's end location:
+    const direction = google.maps.geometry.spherical.computeHeading(
+      junction.end_location,
+      nextStep.end_location,
+    );
+    return {
+      query: {
+        position,
+        deviation,
+      },
+      junction: {
+        position: toGoogleLatLongLiteral(nextStep.start_location),
+        distance: google.maps.geometry.spherical.computeDistanceBetween(
+          new google.maps.LatLng(position),
+          nextStep.start_location,
+        ),
+        turnDirection: direction,
+        maneuver: nextStep.maneuver,
+        htmlInstructions: nextStep.instructions,
+      },
+      prevStep: junction,
+      nextStep: nextStep,
+    };
   }
 
   /**

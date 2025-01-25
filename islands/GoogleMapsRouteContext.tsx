@@ -102,7 +102,7 @@ export default function GoogleMapsRouteContext(
   useEffect(() => {
     if (value.status !== "loaded") return;
     console.log("[gmrc] Route loaded", value.route);
-    const route = value.route.routes[0];
+    const { route } = value;
     const sv = new google.maps.StreetViewService();
     const routeTracker = new GoogleMapsRouteTracker(route);
     worldSource.next(
