@@ -1,16 +1,28 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { Buffer } from "node:buffer";
+import { URL } from "node:url";
 import mqtt from "npm:mqtt";
 import { BehaviorSubject, map, merge, Subject } from "npm:rxjs";
 import { filter } from "npm:rxjs/operators";
 
-const url = IS_BROWSER
-  ? "mqtt://homeassistant.saltet.jolsson.info:1884"
-  : "mqtt://homeassistant.saltet.jolsson.info:1883";
+const urlBase = new URL(Deno.env.get("MQTT_BROKER_URL")!);
+urlBase.port = IS_BROWSER
+  ? "1884" // websockets from browser
+  : "1883"; // something else from server
+const url = urlBase.toString();
+
+const mqttConfig = {
+  urlBase: Deno.env.get("MQTT_BROKER_URL")!,
+  url,
+  username: Deno.env.get("MQTT_BROKER_USERNAME")!,
+  password: Deno.env.get("MQTT_BROKER_PASSWORD")!,
+};
+
+console.log("[biketel] connecting mqtt", { ...mqttConfig, password: "****" });
 
 const client = mqtt.connect(url, {
-  username: "bikr",
-  password: "abc123",
+  username: Deno.env.get("MQTT_BROKER_USERNAME")!,
+  password: Deno.env.get("MQTT_BROKER_PASSWORD")!,
 });
 
 const speedTopic = "homeassistant/sensor/spinboi_speed/state";
@@ -44,7 +56,16 @@ const bikeSpeedSource = messageSource.pipe(
   map(([_, message]) => parseFloat(message.toString())),
 );
 
-export const speedStream = merge(bikeSpeedSource, manualSpeedSource);
+export const speedSourceKph = merge(bikeSpeedSource, manualSpeedSource).pipe(
+  filter((speed) => {
+    const isValid = speed >= 0 && speed < 100;
+    if (!isValid) {
+      console.warn("[biketel] Rejecting crazy speed", speed);
+      return false;
+    }
+    return true;
+  }),
+);
 
 export const triggerSpeed = (speedKph: number) => {
   console.log("[biketel] triggerSpeed", speedKph);

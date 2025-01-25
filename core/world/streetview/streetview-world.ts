@@ -1,82 +1,51 @@
-// @deno-types="npm:@types/google.maps"
 import { computeDestinationPoint } from "geolib";
-import { BehaviorSubject } from "rxjs";
-import { streetViewLinks } from "../session-main.ts";
+import { BehaviorSubject, bufferTime, filter, map, Observable } from "rxjs";
 import {
   AngleDegrees,
   LatLong,
-  Presence,
-  StreetViewLinkWithHeading,
-} from "../types.ts";
+  Movement,
+  MovementRequest,
+  World,
+} from "../../types.ts";
 import {
   findClosestDirection,
+  StreetViewLinkResolver,
   toGoogleLatLongLiteral,
-  toValidLinks,
 } from "./streetview-utils.ts";
-import { MovementRequest, World } from "./world.ts";
-
-type GoogleStreetViewPresenceWorldData = { pano: string };
-type GoogleStreetViewPresence = Presence<
-  LatLong,
-  AngleDegrees,
-  GoogleStreetViewPresenceWorldData
->;
-
-export type StreetViewLinkResolver = {
-  (position: LatLong): Promise<StreetViewLinkWithHeading[]>;
-};
-
-export const signalLinksResolver: StreetViewLinkResolver = () => {
-  return Promise.resolve(streetViewLinks.value);
-};
-export const createMapsApiLinksResolver =
-  (streetViewService: google.maps.StreetViewService): StreetViewLinkResolver =>
-  (position) => {
-    const latLng = toGoogleLatLongLiteral(position);
-    return new Promise((res) => {
-      streetViewService.getPanorama({
-        location: latLng,
-        preference: google.maps.StreetViewPreference.NEAREST,
-      }, (data, status) => {
-        if (status !== google.maps.StreetViewStatus.OK) {
-          return [];
-        }
-        res(toValidLinks(data!.links!));
-      });
-    });
-  };
+import { GoogleStreetViewPresence, RouteLike } from "./types.ts";
 
 export class StreetViewWorld implements World<GoogleStreetViewPresence> {
   private readonly presenceSource: BehaviorSubject<GoogleStreetViewPresence>;
   public constructor(
     public readonly sv: google.maps.StreetViewService,
-    private readonly initialPosition: LatLong,
-    private readonly initialHeading: number,
-    private readonly linkResolver: StreetViewLinkResolver = signalLinksResolver,
+    private readonly route: RouteLike<LatLong, AngleDegrees>,
+    private readonly linkResolver: StreetViewLinkResolver,
     public readonly searchRadius = 50,
   ) {
+    const { position, heading } = route.getInitialPresence();
     this.presenceSource = new BehaviorSubject<GoogleStreetViewPresence>(
       {
-        position: initialPosition,
-        heading: { degrees: initialHeading },
+        position,
+        heading,
         world: { pano: "" },
       },
     );
   }
 
   createPresence() {
+    const initialPresence = this.route.getInitialPresence();
     console.log(
       "[sv] createPresence: getting panorama at initial position",
-      this.initialPosition,
+      initialPresence,
     );
     this.sv.getPanorama({
-      location: toGoogleLatLongLiteral(this.initialPosition),
+      location: toGoogleLatLongLiteral(initialPresence.position),
       preference: google.maps.StreetViewPreference.NEAREST,
     }, (data, status) => {
       if (status !== google.maps.StreetViewStatus.OK) {
         throw Error(
           "No panorama found at suggested position: " +
-            JSON.stringify(this.initialPosition),
+            JSON.stringify(initialPresence.position),
         );
       }
       const d = data!;
@@ -85,7 +54,7 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
         d.location!.latLng?.lng()!,
       ];
       const headingResult = findClosestDirection(
-        this.initialHeading,
+        initialPresence.heading.degrees,
         d.links!,
       );
       if (!headingResult) throw Error("No heading result");
@@ -100,7 +69,21 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
     return this.presenceSource.asObservable();
   }
 
-  async handleMovement(
+  consume(movements: Observable<Movement>) {
+    movements
+      .pipe(
+        // Buffer & sum up movements to prevent spamming map api
+        // Should ideally be synchronized with the street view panorama updates?
+        bufferTime(1000),
+        map((movements) => ({
+          meters: movements.reduce((acc, curr) => acc + curr.meters, 0),
+        })),
+        filter((m) => m.meters > 0),
+      )
+      .subscribe((movement) => this.handleMovement(movement));
+  }
+
+  private async handleMovement(
     movement: MovementRequest,
   ) {
     const presence = this.presenceSource.value; // Hacky
@@ -109,23 +92,37 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
 
     const [currentLat, currentLon] = presence.position;
 
-    const panoLinks = await this.linkResolver(presence.position);
+    // Check if close to a route nav point
+    const junction = this.route.queryJunction(presence.position);
+    if (junction) {
+      console.log("[sv] Close to a route nav point!", junction);
+    }
 
+    // If we're not close to a route nav point, use panorama links to determine direction:
+    const panoLinks = await this.linkResolver(presence.position);
     if (!panoLinks || panoLinks.length === 0) {
       console.log("[sv] No links available!");
-      return null;
+      return; // TODO: MOVE ANYWAY LOL
     }
 
+    const nextDirection = (junction && junction.junction.distance < 10)
+      ? junction.junction.turnDirection
+      : presence.heading.degrees;
+
+    console.log("[sv] Next direction determined", {
+      current: presence.heading.degrees,
+      ...(junction &&
+        {
+          junctionDistance: junction?.junction.distance,
+          junctionDirection: junction?.junction.turnDirection,
+        }),
+      nextDirection,
+    });
+
     const bestMatchLink = findClosestDirection(
-      presence.heading.degrees,
+      nextDirection,
       panoLinks,
     );
-    if (!bestMatchLink) {
-      console.log(
-        "[sv] No link available from where we are!",
-      );
-      return null;
-    }
 
     const newHeading = bestMatchLink.link.heading;
     const newPosition: { latitude: number; longitude: number } =

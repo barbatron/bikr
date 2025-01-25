@@ -1,12 +1,14 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
 import { ComponentChildren, createContext } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { bikeRoute, worldSource } from "../core/session-main.ts";
-import { LatLong } from "../core/types.ts";
+import { worldSource } from "../core/session-main.ts";
+import {
+  GoogleMapsRouteTracker,
+} from "../core/world/streetview/gm-route-tracker.ts";
 import {
   createMapsApiLinksResolver,
   StreetViewWorld,
-} from "../core/world/streetview-world.ts";
+} from "../core/world/streetview/index.ts";
 
 type GoogleMapsRouteContextProps = {
   startAt: google.maps.DirectionsRequest["origin"];
@@ -99,21 +101,14 @@ export default function GoogleMapsRouteContext(
 
   useEffect(() => {
     if (value.status !== "loaded") return;
-    const { route } = value;
-
-    console.log("[gmrc] Route loaded", route);
-    const startLoc = route.legs[0].start_location;
-    const initialPosition = [
-      startLoc.lat()!,
-      startLoc.lng()!,
-    ] satisfies LatLong;
-    const initialDirection = bikeRoute.routeStart.dir;
+    console.log("[gmrc] Route loaded", value.route);
+    const route = value.route.routes[0];
     const sv = new google.maps.StreetViewService();
+    const routeTracker = new GoogleMapsRouteTracker(route);
     worldSource.next(
       new StreetViewWorld(
         sv,
-        initialPosition,
-        initialDirection,
+        routeTracker,
         createMapsApiLinksResolver(sv),
         50,
       ),

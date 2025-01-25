@@ -1,7 +1,9 @@
 /// <reference types="npm:@types/google.maps" />
-/// <reference types="npm:@googlemaps/js-api-loader" />
+
+import { Observable } from "npm:rxjs";
+
 // World position, heading, etc
-export type LatLong = [number, number];
+export type LatLong = [number, number]; // TODO: fix so [1,3] satisfies without cast/annotation
 export type AngleDegrees = { degrees: number };
 export type DistanceMeters = { meters: number };
 
@@ -22,11 +24,14 @@ export type Presence<
 
 export type Movement = DistanceMeters; // & Heading;
 
-export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
-  heading: number;
-};
+export type MovementRequest = Movement;
 
-export type NewHeadingResult = {
-  minDiff: number;
-  link: StreetViewLinkWithHeading;
+export type MovementResult = {
+  movementActual: Movement;
+  presence: Presence;
 } | null;
+
+export interface World<TPresence extends Presence> {
+  createPresence: () => Observable<TPresence>;
+  consume(movements: Observable<Movement>): void;
+}

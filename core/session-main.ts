@@ -1,23 +1,8 @@
-import { signal } from "@preact/signals-core";
-import {
-  BehaviorSubject,
-  debounce,
-  interval,
-  pairwise,
-  scan,
-  timeInterval,
-} from "npm:rxjs";
-import { combineLatestWith, map, switchMap, tap } from "npm:rxjs/operators";
+import { BehaviorSubject, pairwise, scan, timeInterval } from "npm:rxjs";
+import { map, switchMap, tap } from "npm:rxjs/operators";
 import { filter } from "rxjs";
-import { speedStream } from "./bike-telemetry.ts";
-import {
-  AngleDegrees,
-  LatLong,
-  Movement,
-  Presence,
-  StreetViewLinkWithHeading,
-} from "./types.ts";
-import { World } from "./world/world.ts";
+import { speedSourceKph } from "./bike-telemetry.ts";
+import { AngleDegrees, LatLong, Movement, Presence, World } from "./types.ts";
 import { TestWorld } from "./world/test-world.ts";
 
 // deno-lint-ignore no-unused-vars
@@ -29,50 +14,33 @@ export const bikeRoute = {
   routeEnd: "Tyresö Centrum, 135 40 Tyresö",
 };
 
-// const nackaReservSaltsjo = {
-//   position: [59.2848213, 18.2077248] satisfies LatLong,
-//   heading: 90,
-// };
-
-export const startPosition = [
+export const startPosition: LatLong = [
   bikeRoute.routeStart.pos.lat,
   bikeRoute.routeStart.pos.lng,
-] satisfies LatLong;
+];
+
 export const startDirection = bikeRoute.routeStart.dir;
 
-export const worldSource = new BehaviorSubject<
-  World<Presence<LatLong, AngleDegrees>> | null
->(null);
-
-export const presence = worldSource
-  .pipe(
-    filter((world) => world !== null),
-    tap((w) => console.log("[presence] Got world", w)),
-    switchMap((world) => world.createPresence()),
-  );
-
-export const directionSource = new BehaviorSubject<number>(startDirection).pipe(
-  debounce(() => interval(1000)),
-);
-
-export const streetViewLinks = signal<StreetViewLinkWithHeading[]>([]);
-
-const distanceSource = speedStream.pipe(
+const distanceSource = speedSourceKph.pipe(
   timeInterval(), // Get time since last emit
   scan((acc, curr) => {
     if (curr.interval > 3000) {
-      console.log("[distance] Too long since last update - ignoring update", {
-        acc,
-        curr,
-      });
+      console.log(
+        "[distanceSource] Too long since last speed update - ignoring",
+        {
+          totalDistance: acc,
+          timeSinceLast: curr.interval,
+          speedKph: curr.value,
+        },
+      );
       return acc;
     }
-    const speed = curr.value;
-    const speedMps = speed / 3.6; // km/h -> m/s
+    const speedKph = curr.value;
+    const speedMps = speedKph / 3.6; // km/h -> m/s
     const distanceMeters = speedMps * curr.interval / 1000;
-    console.log("[distance] Distance", {
+    console.log("[distanceSource] Distance", {
       distanceMeters,
-      speed,
+      speedKph,
       speedMps,
       interval: curr.interval,
     });
@@ -82,33 +50,32 @@ const distanceSource = speedStream.pipe(
 
 export const movementSource = distanceSource
   .pipe(
-    tap((dist) => console.log("[trip] Distance", dist)),
     pairwise(),
     map(([prevDistance, totalDistance]) => {
-      const distance = totalDistance - prevDistance;
-      console.log("[trip] update", {
-        distance,
+      const distanceMeters = totalDistance - prevDistance;
+      console.log("[movementSource] distance update", {
+        distanceMeters,
         prevDistance,
         totalDistance,
       });
       const movement: Movement = {
-        meters: distance,
+        meters: distanceMeters,
       };
       return movement;
     }),
   );
 
-const testWorld = new TestWorld();
+export const worldSource = new BehaviorSubject<
+  World<Presence<LatLong, AngleDegrees>> | null
+>(new TestWorld());
 
-movementSource.pipe(
-  tap((movement) => console.log("[trip] Movement", movement)),
-  combineLatestWith(worldSource),
-).subscribe(([movement, world]) => {
-  if (!world) {
-    console.log(
-      "[movement -> world] No world to handle movement - sending to test world",
-      movement,
-    );
-  }
-  (world ?? testWorld).handleMovement(movement);
-});
+// This doesn't feel right :D
+worldSource.pipe(tap((w) => console.log("[worldSource] Got world", w)))
+  .subscribe((w) => w?.consume(movementSource));
+
+export const presence = worldSource
+  .pipe(
+    filter((world) => world !== null),
+    switchMap((world) => world.createPresence()),
+    tap((p) => console.log("[presence] Created presence", p)),
+  );
