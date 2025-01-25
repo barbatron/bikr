@@ -24,13 +24,15 @@ export type GoogleMapProps = {
   mapId: string;
   zoomLevel: number;
   marker?: LatLong;
-  streetViewLinks: Signal<StreetViewLinkWithHeading[]> | undefined;
+  streetViewLinks?: Signal<StreetViewLinkWithHeading[]>;
+  streetView: boolean;
 };
 
 export default function GoogleMap(
   {
     mapId,
     zoomLevel,
+    streetView,
     streetViewLinks,
   }: GoogleMapProps,
 ) {
@@ -92,7 +94,7 @@ export default function GoogleMap(
 
   // Street view panorama initialization
   useEffect(() => {
-    if (!map || !panoRef.current) return;
+    if (!map || !panoRef.current || !streetView) return;
     if ((map as google.maps.Map).getStreetView() == panorama) {
       console.log("[gm] Map already has street view, skipping pano init");
       return;
@@ -204,7 +206,7 @@ export default function GoogleMap(
     m.panTo(tripPosLatLng);
     m.setHeading(tripDirection);
 
-    // Update panorama
+    // Update panorama, if exists
     const panorama = m.getStreetView();
     if (panorama) {
       const p = panorama as google.maps.StreetViewPanorama;
@@ -212,8 +214,6 @@ export default function GoogleMap(
         position: tripPosLatLng,
         pov: { heading: tripDirection, pitch: 0 },
       });
-      // p.setPov({ heading: tripDirection, pitch: 0 });
-      // p.setPosition(tripPosLatLng);
     } else console.warn("Could not set panorama position/pov");
   }, [tripPosLatLng, tripDirection, map]);
 
@@ -283,11 +283,17 @@ export default function GoogleMap(
           5 kph
         </button>
       </div>
-      <div
-        style={{ height: "70vh" }}
-        ref={panoRef}
-        id="pano"
-      />
+
+      {streetView
+        ? (
+          <div
+            style={{ height: "70vh" }}
+            ref={panoRef}
+            id="pano"
+          />
+        )
+        : null}
+
       <div
         class="flex-grow"
         ref={mapRef}

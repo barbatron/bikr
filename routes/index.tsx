@@ -19,6 +19,7 @@ export default function Home() {
         <GoogleMap
           mapId={MAP_ID}
           zoomLevel={18}
+          streetView={false}
           streetViewLinks={streetViewLinks}
         >
         </GoogleMap>
