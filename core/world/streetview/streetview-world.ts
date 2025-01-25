@@ -1,5 +1,5 @@
 import { computeDestinationPoint } from "geolib";
-import { BehaviorSubject, bufferTime, map, Observable } from "rxjs";
+import { BehaviorSubject, bufferTime, filter, map, Observable } from "rxjs";
 import {
   AngleDegrees,
   LatLong,
@@ -78,6 +78,7 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
         map((movements) => ({
           meters: movements.reduce((acc, curr) => acc + curr.meters, 0),
         })),
+        filter((m) => m.meters > 0),
       )
       .subscribe((movement) => this.handleMovement(movement));
   }

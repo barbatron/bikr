@@ -12,6 +12,11 @@ export interface RouteLike<TPos, THeading> {
   queryJunction(positionLatLong: LatLong): QueryJunctionResult | undefined;
 }
 
+export type StepWithTotalDistance = {
+  step: google.maps.DirectionsStep;
+  totalDistance: number;
+};
+
 export type QueryJunctionResult = {
   query: {
     position: google.maps.LatLngLiteral;

@@ -1,5 +1,6 @@
 import { LatLong } from "../../types.ts";
 import { diffHeading } from "../../utils.ts";
+import { StepWithTotalDistance } from "./types.ts";
 
 export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
   heading: number;
@@ -76,6 +77,14 @@ export const createMapsApiLinksResolver =
     });
   };
 
-export function traverseSteps(route: google.maps.DirectionsRoute) {
-  return route.legs.flatMap((leg) => leg.steps);
+export function traverseSteps(
+  route: google.maps.DirectionsRoute,
+): StepWithTotalDistance[] {
+  let totalDistance = 0;
+  return route.legs.flatMap((leg) =>
+    leg.steps.map((step) => ({
+      step,
+      stepStartDistance: totalDistance += step.distance?.value ?? 0,
+    }))
+  );
 }

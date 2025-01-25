@@ -1,23 +1,26 @@
 import { AngleDegrees, LatLong } from "../../types.ts";
 import { toGoogleLatLongLiteral, traverseSteps } from "./streetview-utils.ts";
-import { QueryJunctionResult, RouteLike } from "./types.ts";
+import {
+  QueryJunctionResult,
+  RouteLike,
+  StepWithTotalDistance,
+} from "./types.ts";
 
 export class GoogleMapsRouteTracker
   implements RouteLike<LatLong, AngleDegrees> {
   private lastMatchIndex = 0;
-  private readonly steps: google.maps.DirectionsStep[];
+  private readonly steps: StepWithTotalDistance[];
 
   public constructor(public readonly route: google.maps.DirectionsRoute) {
     this.steps = Array.from(traverseSteps(route));
   }
 
   getInitialPresence() {
-    const steps = traverseSteps(this.route);
-    if (steps.length < 2) throw Error("Route has less than 2 steps");
-    const startLoc = toGoogleLatLongLiteral(steps[0].start_location);
+    if (this.steps.length < 2) throw Error("Route has less than 2 steps");
+    const startLoc = toGoogleLatLongLiteral(this.steps[0].step.start_location);
     const initialDirection = google.maps.geometry.spherical.computeHeading(
       startLoc,
-      steps[1].start_location,
+      this.steps[1].step.start_location ?? startLoc,
     );
     return {
       position: [startLoc.lat, startLoc.lng] satisfies LatLong,
@@ -29,6 +32,26 @@ export class GoogleMapsRouteTracker
     return this.steps.slice(this.lastMatchIndex);
   }
 
+  setDistanceTraveled(distanceMeters: number) {
+    const steps = this.steps;
+    for (
+      let i = 0, step = this.steps[i];
+      i < steps.length && steps[i].totalDistance < distanceMeters;
+      i++
+    ) {
+      if (steps[i + 1]?.totalDistance > distanceMeters) {
+        this.lastMatchIndex = i;
+        const stepFraction = (distanceMeters - step.totalDistance) /
+          (step.step.distance?.value ?? 1);
+        console.log("[gmrt:setDistanceTraveled] Matched step", {
+          distanceMeters,
+          i,
+          stepFraction,
+        });
+      }
+    }
+  }
+
   queryJunction(positionLatLong: LatLong): QueryJunctionResult | undefined {
     if (!this.steps.length) {
       console.warn("[gmrt] No steps to query junctions");
@@ -38,7 +61,7 @@ export class GoogleMapsRouteTracker
 
     // If current step distance is very small, use half of that as radius, otherwise 20 meters:
     const radiusMeters = Math.min(
-      this.steps[this.lastMatchIndex].distance?.value ?? Infinity,
+      this.steps[this.lastMatchIndex].step.distance?.value ?? Infinity,
       20,
     );
 
@@ -50,7 +73,7 @@ export class GoogleMapsRouteTracker
     }
 
     const remainingSteps = this.remainingSteps();
-    const currentStep = remainingSteps[0];
+    const currentStep = remainingSteps[0].step;
     const deviation = this.calculateDeviation(
       position,
       currentStep.start_location,
@@ -70,7 +93,8 @@ export class GoogleMapsRouteTracker
       lastMatchIndex: this.lastMatchIndex,
     });
 
-    const junction = remainingSteps.find((step, i) => {
+    const junction = remainingSteps.find((stepEntry, i) => {
+      const step = stepEntry.step;
       const stepEnd = step.end_location;
       const distance = google.maps.geometry.spherical.computeDistanceBetween(
         new google.maps.LatLng(position),
