@@ -67,6 +67,14 @@ export class GoogleMapsRouteTracker
     return junctionContext;
   }
 
+  public bumpToNextJunction() {
+    console.log("[gmrt] Bumping to next junction", {
+      currentIndex: this.lastMatchIndex,
+      nextIndex: this.lastMatchIndex + 1,
+    });
+    this.lastMatchIndex++;
+  }
+
   queryJunction(
     positionLatLong: GoogleLatLngAny | LatLong,
   ): QueryJunctionResult<google.maps.LatLngLiteral> | undefined {
@@ -90,7 +98,10 @@ export class GoogleMapsRouteTracker
       prevJunction.stepLength ?? Infinity,
       20,
     );
-    const nextJunction = this.junctions[this.lastMatchIndex + 1];
+    const prevJunctionIndex = this.junctions.indexOf(prevJunction);
+    const nextJunction = prevJunctionIndex > -1
+      ? this.junctions[prevJunctionIndex + 1]
+      : undefined;
     const distanceToNext = google.maps.geometry.spherical
       .computeDistanceBetween(
         position,

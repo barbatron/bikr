@@ -68,6 +68,10 @@ export type StreetViewLinkResolver = {
   (position: LatLong): Promise<StreetViewLinkWithHeading[]>;
 };
 
+export function noLinksResolver(): Promise<StreetViewLinkWithHeading[]> {
+  return Promise.resolve([]);
+}
+
 export const createMapsApiLinksResolver =
   (streetViewService: google.maps.StreetViewService): StreetViewLinkResolver =>
   (position) => {

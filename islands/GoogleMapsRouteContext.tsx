@@ -6,11 +6,11 @@ import { worldSource } from "../core/session-main.ts";
 import {
   GoogleMapsRouteTracker,
 } from "../core/world/streetview/gm-route-tracker.ts";
+import { StreetViewWorld } from "../core/world/streetview/index.ts";
 import {
-  createMapsApiLinksResolver,
-  StreetViewWorld,
-} from "../core/world/streetview/index.ts";
-import { gmRouteToJunctions } from "../core/world/streetview/streetview-utils.ts";
+  gmRouteToJunctions,
+  noLinksResolver,
+} from "../core/world/streetview/streetview-utils.ts";
 
 type GoogleMapsRouteContextProps = {
   startAt: google.maps.DirectionsRequest["origin"];
@@ -114,16 +114,16 @@ export default function GoogleMapsRouteContext(
   useEffect(() => {
     if (value.status !== "loaded") return;
     console.log("[gmrc] Route loaded");
-    const sv = new google.maps.StreetViewService();
+    // const sv = new google.maps.StreetViewService();
+    // const linkResolver = createMapsApiLinksResolver(sv);
+    const linkResolver = noLinksResolver;
     const junctions = gmRouteToJunctions(value.directionsResult.routes[0]);
     const routeTracker = new GoogleMapsRouteTracker(junctions);
     worldSource.next(
-      new StreetViewWorld(
-        sv,
-        routeTracker,
-        createMapsApiLinksResolver(sv),
-        50,
-      ),
+      new StreetViewWorld({
+        route: routeTracker,
+        linkResolver,
+      }),
     );
   });
   return (

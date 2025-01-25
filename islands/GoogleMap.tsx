@@ -24,14 +24,12 @@ export type GoogleMapProps = {
   zoomLevel: number;
   marker?: LatLong;
   streetViewLinks: Signal<StreetViewLinkWithHeading[]> | undefined;
-  // mapsRoute?: Signal<google.maps.DirectionsRoute[] | null>;
 };
 
 export default function GoogleMap(
   {
     mapId,
     zoomLevel,
-    // mapsRoute,
     streetViewLinks,
   }: GoogleMapProps,
 ) {

@@ -1,6 +1,17 @@
 import { AngleDegrees, LatLong, Presence } from "../../types.ts";
+import { StreetViewLinkWithHeading } from "./streetview-utils.ts";
 
-export type GoogleStreetViewPresenceWorldData = { pano: string };
+export type JunctionInfo<TPos> = {
+  junction: Junction<TPos>;
+  distanceFromCurrent: number;
+};
+
+export type GoogleStreetViewPresenceWorldData = {
+  pano?: string;
+  links?: StreetViewLinkWithHeading[];
+  prevJunction: JunctionInfo<GoogleLatLngAny>;
+  nextJunction?: JunctionInfo<GoogleLatLngAny>;
+};
 export type GoogleStreetViewPresence = Presence<
   LatLong,
   AngleDegrees,
@@ -10,7 +21,7 @@ export type GoogleStreetViewPresence = Presence<
 export interface RouteLike<TPos, THeading> {
   getInitialPresence(): { position: TPos; heading: THeading };
   queryJunction(
-    positionLatLong: LatLong,
+    positionLatLong: TPos,
   ): QueryJunctionResult<TPos> | undefined;
 }
 
