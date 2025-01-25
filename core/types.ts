@@ -3,7 +3,7 @@
 import { Observable } from "npm:rxjs";
 
 // World position, heading, etc
-export type LatLong = [number, number]; // TODO: fix so [1,3] satisfies without cast/annotation
+export type LatLong = [number, number, ...unknown[]]; // TODO: fix so [1,3] satisfies without cast/annotation
 export type AngleDegrees = { degrees: number };
 export type DistanceMeters = { meters: number };
 

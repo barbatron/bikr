@@ -1,6 +1,6 @@
 import { LatLong } from "../../types.ts";
-import { diffHeading } from "../../utils.ts";
-import { StepWithTotalDistance } from "./types.ts";
+import { diffHeading, isLatLong } from "../../utils.ts";
+import { GoogleLatLngAny, Junction } from "./types.ts";
 
 export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
   heading: number;
@@ -47,13 +47,21 @@ export function findClosestDirection<
 }
 
 export function toGoogleLatLongLiteral(
-  latLng: google.maps.LatLng | google.maps.LatLngLiteral | LatLong,
+  latLng: GoogleLatLngAny | LatLong,
 ): google.maps.LatLngLiteral {
   if (latLng instanceof Array) {
     // Is LatLong
     return { lat: latLng[0], lng: latLng[1] };
   }
   return latLng instanceof google.maps.LatLng ? latLng.toJSON() : latLng;
+}
+
+export function toLatLong(
+  latLng: GoogleLatLngAny | LatLong,
+): LatLong {
+  if (isLatLong(latLng)) return latLng;
+  if (latLng instanceof google.maps.LatLng) return [latLng.lat(), latLng.lng()];
+  return [latLng.lat, latLng.lng];
 }
 
 export type StreetViewLinkResolver = {
@@ -77,14 +85,31 @@ export const createMapsApiLinksResolver =
     });
   };
 
-export function traverseSteps(
+export function gmRouteToJunctions(
   route: google.maps.DirectionsRoute,
-): StepWithTotalDistance[] {
+): Junction<google.maps.LatLngLiteral>[] {
+  const allSteps = route.legs.flatMap((leg) => leg.steps);
   let totalDistance = 0;
-  return route.legs.flatMap((leg) =>
-    leg.steps.map((step) => ({
-      step,
-      stepStartDistance: totalDistance += step.distance?.value ?? 0,
-    }))
-  );
+  const junctions: Junction<google.maps.LatLngLiteral>[] = [];
+  for (let i = 0; i < allSteps.length; i++) {
+    const step = allSteps[i];
+    const stepLength = step.distance?.value ?? 0;
+    if (!stepLength) {
+      console.warn("[gmrt:gmRouteToJunctions] Zero step length", step);
+    }
+    const startDistance = (totalDistance += stepLength);
+    junctions.push({
+      position: toGoogleLatLongLiteral(step.start_location),
+      nextPosition: toGoogleLatLongLiteral(step.end_location),
+      startDistance,
+      stepLength,
+      directionOut: google.maps.geometry.spherical.computeHeading(
+        step.start_location,
+        step.start_location,
+      ),
+      maneuver: step.maneuver,
+      htmlInstructions: step.instructions,
+    });
+  }
+  return junctions;
 }

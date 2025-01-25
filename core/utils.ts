@@ -9,3 +9,8 @@ export const roundPosition = (
 
 export const diffHeading = (heading1: number, heading2: number): number =>
   Math.abs(heading1 - heading2) % 360;
+
+export const isLatLong = (x: unknown): x is LatLong =>
+  x instanceof Array &&
+  x.length >= 2 &&
+  typeof x[0] === "number" && typeof x[1] === "number";

@@ -1,4 +1,5 @@
 import { IS_BROWSER } from "$fresh/runtime.ts";
+import { assert } from "$std/assert/assert.ts";
 import { ComponentChildren, createContext } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { worldSource } from "../core/session-main.ts";
@@ -9,6 +10,7 @@ import {
   createMapsApiLinksResolver,
   StreetViewWorld,
 } from "../core/world/streetview/index.ts";
+import { gmRouteToJunctions } from "../core/world/streetview/streetview-utils.ts";
 
 type GoogleMapsRouteContextProps = {
   startAt: google.maps.DirectionsRequest["origin"];
@@ -18,13 +20,23 @@ type GoogleMapsRouteContextProps = {
   mockData?: any;
 };
 
+type DirectionsResultWithAtLeastOneRoute = google.maps.DirectionsResult & {
+  routes: [google.maps.DirectionsRoute, ...google.maps.DirectionsRoute[]];
+};
+
 type GoogleMapsRouteContext = { status: "loading" } | {
   status: "error";
   error: unknown;
 } | {
   status: "loaded";
-  route: google.maps.DirectionsRoute;
+  directionsResult: DirectionsResultWithAtLeastOneRoute;
 };
+
+function hasAtLeastOneRoute(
+  result: google.maps.DirectionsResult,
+): result is DirectionsResultWithAtLeastOneRoute {
+  return result.routes.length > 0;
+}
 
 export const googleMapsRouteContext = createContext<GoogleMapsRouteContext>({
   status: "loading",
@@ -44,7 +56,7 @@ export default function GoogleMapsRouteContext(
   const [value, setValue] = useState<GoogleMapsRouteContext>(
     !mockData
       ? { status: "loading" }
-      : { status: "loaded", route: mockData[0] },
+      : { status: "loaded", directionsResult: mockData[0] },
   );
 
   useEffect(() => {
@@ -59,14 +71,14 @@ export default function GoogleMapsRouteContext(
       if (cancelled) return;
       switch (status) {
         case google.maps.DirectionsStatus.OK: {
-          const routes = result!.routes;
+          assert(result);
           console.log(
-            `[gmrc] Got ${routes.length} routes`,
-            routes,
+            `[gmrc] Got ${result.routes.length} routes`,
+            result.routes,
           );
-          if (routes.length) {
+          if (hasAtLeastOneRoute(result)) {
             setValue(
-              { route: routes[0], status: "loaded" },
+              { directionsResult: result, status: "loaded" },
             );
           } else {
             setValue({
@@ -101,10 +113,10 @@ export default function GoogleMapsRouteContext(
 
   useEffect(() => {
     if (value.status !== "loaded") return;
-    console.log("[gmrc] Route loaded", value.route);
-    const { route } = value;
+    console.log("[gmrc] Route loaded");
     const sv = new google.maps.StreetViewService();
-    const routeTracker = new GoogleMapsRouteTracker(route);
+    const junctions = gmRouteToJunctions(value.directionsResult.routes[0]);
+    const routeTracker = new GoogleMapsRouteTracker(junctions);
     worldSource.next(
       new StreetViewWorld(
         sv,

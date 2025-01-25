@@ -1,154 +1,108 @@
 import { AngleDegrees, LatLong } from "../../types.ts";
-import { toGoogleLatLongLiteral, traverseSteps } from "./streetview-utils.ts";
+import { toGoogleLatLongLiteral } from "./streetview-utils.ts";
 import {
+  GoogleLatLngAny,
+  Junction,
   QueryJunctionResult,
   RouteLike,
-  StepWithTotalDistance,
 } from "./types.ts";
 
 export class GoogleMapsRouteTracker
-  implements RouteLike<LatLong, AngleDegrees> {
+  implements RouteLike<google.maps.LatLngLiteral, AngleDegrees> {
   private lastMatchIndex = 0;
-  private readonly steps: StepWithTotalDistance[];
 
-  public constructor(public readonly route: google.maps.DirectionsRoute) {
-    this.steps = Array.from(traverseSteps(route));
+  public constructor(
+    public readonly junctions: ReadonlyArray<
+      Junction<google.maps.LatLngLiteral>
+    >,
+  ) {
+    if (!junctions.length) throw Error("Empty junctions array");
   }
 
   getInitialPresence() {
-    if (this.steps.length < 2) throw Error("Route has less than 2 steps");
-    const startLoc = toGoogleLatLongLiteral(this.steps[0].step.start_location);
-    const initialDirection = google.maps.geometry.spherical.computeHeading(
-      startLoc,
-      this.steps[1].step.start_location ?? startLoc,
-    );
+    const [firstJunction] = this.junctions;
     return {
-      position: [startLoc.lat, startLoc.lng] satisfies LatLong,
-      heading: { degrees: initialDirection },
+      position: toGoogleLatLongLiteral(firstJunction.position),
+      heading: { degrees: firstJunction.directionOut! },
     };
   }
 
-  remainingSteps() {
-    return this.steps.slice(this.lastMatchIndex);
-  }
-
-  setDistanceTraveled(distanceMeters: number) {
-    const steps = this.steps;
-    for (
-      let i = 0, step = this.steps[i];
-      i < steps.length && steps[i].totalDistance < distanceMeters;
-      i++
-    ) {
-      if (steps[i + 1]?.totalDistance > distanceMeters) {
-        this.lastMatchIndex = i;
-        const stepFraction = (distanceMeters - step.totalDistance) /
-          (step.step.distance?.value ?? 1);
-        console.log("[gmrt:setDistanceTraveled] Matched step", {
-          distanceMeters,
-          i,
-          stepFraction,
-        });
-      }
-    }
-  }
-
-  queryJunction(positionLatLong: LatLong): QueryJunctionResult | undefined {
-    if (!this.steps.length) {
-      console.warn("[gmrt] No steps to query junctions");
+  junctionContextFromTotalDistance(totalDistance: number) {
+    const prevJunction = this.junctions.find((j) =>
+      totalDistance >= j.startDistance &&
+      totalDistance < (j.startDistance + j.stepLength)
+    );
+    if (!prevJunction) {
+      console.warn(
+        "[gmrt] No junction found for total distance - end of route",
+        totalDistance,
+      );
+      // TODO: Stream complete
       return;
     }
+    const distanceToNext = prevJunction.startDistance +
+      prevJunction.stepLength - totalDistance;
+    const stepFraction = distanceToNext / prevJunction.stepLength;
+    const position = google.maps.geometry.spherical.interpolate(
+      prevJunction.position,
+      prevJunction.nextPosition,
+      stepFraction,
+    );
+    const directionFromCurrent = google.maps.geometry.spherical.computeHeading(
+      position,
+      prevJunction.nextPosition,
+    );
+    const prevJunctionIndex = this.junctions.indexOf(prevJunction);
+    const nextJunction = prevJunctionIndex > -1
+      ? this.junctions[prevJunctionIndex + 1]
+      : undefined;
+    const junctionContext = {
+      position: toGoogleLatLongLiteral(position),
+      distanceToNext,
+      directionFromCurrent,
+      prevJunction,
+      nextJunction,
+    };
+    console.log("[gmrt] Junction context from total distance", junctionContext);
+    return junctionContext;
+  }
+
+  queryJunction(
+    positionLatLong: GoogleLatLngAny | LatLong,
+  ): QueryJunctionResult<google.maps.LatLngLiteral> | undefined {
     const position = toGoogleLatLongLiteral(positionLatLong);
+    if (this.lastMatchIndex >= this.junctions.length - 1) {
+      console.warn(
+        "[gmrt] No remaining junctions to query - route completed, STOP BIKING!",
+      );
+      return;
+    }
+
+    const prevJunction = this.junctions[this.lastMatchIndex];
+    const currentDeviation = this.calculateDeviation(
+      position,
+      new google.maps.LatLng(prevJunction.position),
+      new google.maps.LatLng(prevJunction.nextPosition),
+    );
 
     // If current step distance is very small, use half of that as radius, otherwise 20 meters:
-    const radiusMeters = Math.min(
-      this.steps[this.lastMatchIndex].step.distance?.value ?? Infinity,
+    const proximityThreshold = Math.min(
+      prevJunction.stepLength ?? Infinity,
       20,
     );
-
-    if (this.lastMatchIndex >= this.steps.length) {
-      console.warn(
-        "[gmrt] No remaining steps to query junctions - route completed, STOP BIKING!",
-      );
-      return;
-    }
-
-    const remainingSteps = this.remainingSteps();
-    const currentStep = remainingSteps[0].step;
-    const deviation = this.calculateDeviation(
-      position,
-      currentStep.start_location,
-      currentStep.end_location,
-    );
-
-    console.log("[gmrt] Query junction", {
-      position,
-      radiusMeters,
-      currentStep: {
-        start: toGoogleLatLongLiteral(currentStep?.start_location),
-        end: toGoogleLatLongLiteral(currentStep?.end_location),
-        length: currentStep?.distance?.value,
-        deviation,
-      },
-      remainingCount: remainingSteps.length,
-      lastMatchIndex: this.lastMatchIndex,
-    });
-
-    const stepWithDistance = remainingSteps.find((stepEntry, i) => {
-      const step = stepEntry.step;
-      const stepEnd = step.end_location;
-      const distance = google.maps.geometry.spherical.computeDistanceBetween(
-        new google.maps.LatLng(position),
-        stepEnd,
-      );
-      const thisRad = Math.min(
-        radiusMeters,
-        step.distance?.value ?? radiusMeters,
-      );
-      if (distance < thisRad) {
-        console.log("[gmrt] Found junction within radius", {
-          i,
-          globalIndex: i + this.lastMatchIndex,
-          distance,
-          radiusMeters,
-          thisRad,
-          step,
-        });
-        return true;
-      }
-    });
-
-    if (!stepWithDistance) return;
-    const { step: junction } = stepWithDistance;
-
-    const stepIndex = this.steps.indexOf(stepWithDistance);
-    const { step: nextStep } = this.steps[stepIndex + 1];
-    if (!nextStep) {
-      console.warn("[gmrt] No next step found, route complete!");
-      return;
-    }
-    console.log("[gmrt] Next step", nextStep);
-    // Calculate bearing from current junction to next step's end location:
-    const direction = google.maps.geometry.spherical.computeHeading(
-      junction.end_location,
-      nextStep.end_location,
-    );
-    return {
-      query: {
+    const nextJunction = this.junctions[this.lastMatchIndex + 1];
+    const distanceToNext = google.maps.geometry.spherical
+      .computeDistanceBetween(
         position,
-        deviation,
-      },
-      junction: {
-        position: toGoogleLatLongLiteral(nextStep.start_location),
-        distance: google.maps.geometry.spherical.computeDistanceBetween(
-          new google.maps.LatLng(position),
-          nextStep.start_location,
-        ),
-        turnDirection: direction,
-        maneuver: nextStep.maneuver,
-        htmlInstructions: nextStep.instructions,
-      },
-      prevStep: junction,
-      nextStep: nextStep,
+        new google.maps.LatLng(prevJunction.nextPosition),
+      );
+    const isNearNext = distanceToNext <= proximityThreshold;
+    return {
+      currentDeviation,
+      distanceToNext,
+      isNearNext,
+      prevJunction,
+      nextJunction,
     };
   }
 

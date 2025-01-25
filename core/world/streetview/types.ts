@@ -9,26 +9,27 @@ export type GoogleStreetViewPresence = Presence<
 
 export interface RouteLike<TPos, THeading> {
   getInitialPresence(): { position: TPos; heading: THeading };
-  queryJunction(positionLatLong: LatLong): QueryJunctionResult | undefined;
+  queryJunction(
+    positionLatLong: LatLong,
+  ): QueryJunctionResult<TPos> | undefined;
 }
 
-export type StepWithTotalDistance = {
-  step: google.maps.DirectionsStep;
-  totalDistance: number;
+export type GoogleLatLngAny = google.maps.LatLng | google.maps.LatLngLiteral;
+
+export type Junction<TPos> = {
+  position: TPos;
+  startDistance: number;
+  stepLength: number;
+  nextPosition: TPos;
+  directionOut?: number;
+  maneuver?: string;
+  htmlInstructions?: string;
 };
 
-export type QueryJunctionResult = {
-  query: {
-    position: google.maps.LatLngLiteral;
-    deviation: number;
-  };
-  junction: {
-    position: google.maps.LatLngLiteral;
-    distance: number;
-    turnDirection: number;
-    maneuver?: string;
-    htmlInstructions: string;
-  };
-  prevStep: google.maps.DirectionsStep;
-  nextStep: google.maps.DirectionsStep;
+export type QueryJunctionResult<TPos> = {
+  currentDeviation: number;
+  prevJunction: Junction<TPos>;
+  nextJunction?: Junction<TPos>;
+  distanceToNext: number;
+  isNearNext: boolean;
 };

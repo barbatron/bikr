@@ -1,31 +1,35 @@
-import { computeDestinationPoint } from "geolib";
 import { BehaviorSubject, bufferTime, filter, map, Observable } from "rxjs";
-import {
-  AngleDegrees,
-  LatLong,
-  Movement,
-  MovementRequest,
-  World,
-} from "../../types.ts";
+import { AngleDegrees, Movement, World } from "../../types.ts";
 import {
   findClosestDirection,
   StreetViewLinkResolver,
   toGoogleLatLongLiteral,
+  toLatLong,
 } from "./streetview-utils.ts";
-import { GoogleStreetViewPresence, RouteLike } from "./types.ts";
+import {
+  GoogleLatLngAny,
+  GoogleStreetViewPresence,
+  RouteLike,
+} from "./types.ts";
+
+export type StreetViewWorldParams = {
+  route: RouteLike<GoogleLatLngAny, AngleDegrees>;
+  linkResolver?: StreetViewLinkResolver;
+};
 
 export class StreetViewWorld implements World<GoogleStreetViewPresence> {
   private readonly presenceSource: BehaviorSubject<GoogleStreetViewPresence>;
-  public constructor(
-    public readonly sv: google.maps.StreetViewService,
-    private readonly route: RouteLike<LatLong, AngleDegrees>,
-    private readonly linkResolver: StreetViewLinkResolver,
-    public readonly searchRadius = 50,
-  ) {
+  private readonly linkResolver?: StreetViewLinkResolver;
+  private readonly route: RouteLike<GoogleLatLngAny, AngleDegrees>;
+
+  public constructor({ route, linkResolver }: StreetViewWorldParams) {
+    this.route = route;
+    this.linkResolver = linkResolver;
     const { position, heading } = route.getInitialPresence();
+    const posAsLatLng = toGoogleLatLongLiteral(position);
     this.presenceSource = new BehaviorSubject<GoogleStreetViewPresence>(
       {
-        position,
+        position: [posAsLatLng.lat, posAsLatLng.lng],
         heading,
         world: { pano: "" },
       },
@@ -34,38 +38,26 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
 
   createPresence() {
     const initialPresence = this.route.getInitialPresence();
-    console.log(
-      "[sv] createPresence: getting panorama at initial position",
-      initialPresence,
-    );
-    this.sv.getPanorama({
-      location: toGoogleLatLongLiteral(initialPresence.position),
-      preference: google.maps.StreetViewPreference.NEAREST,
-    }, (data, status) => {
-      if (status !== google.maps.StreetViewStatus.OK) {
-        throw Error(
-          "No panorama found at suggested position: " +
-            JSON.stringify(initialPresence.position),
+    console.log("[sv] initialPresence", initialPresence);
+    const initialLatLong = toLatLong(initialPresence.position);
+    if (this.linkResolver) {
+      this.linkResolver(initialLatLong).then((links) => {
+        const closestDirectionResult = findClosestDirection(
+          initialPresence.heading.degrees,
+          links,
         );
-      }
-      const d = data!;
-      const position: LatLong = [
-        d.location!.latLng?.lat()!,
-        d.location!.latLng?.lng()!,
-      ];
-      const headingResult = findClosestDirection(
-        initialPresence.heading.degrees,
-        d.links!,
-      );
-      if (!headingResult) throw Error("No heading result");
-      const p: GoogleStreetViewPresence = {
-        position,
-        heading: { degrees: headingResult.link.heading },
-        world: { pano: headingResult.link.pano! },
-      };
-      console.log("[sv] createPresence: initial presence determined", p);
-      this.presenceSource.next(p);
-    });
+        console.log("[sv] initialPresence corrected from sv links", {
+          closestDirectionResult,
+          initialHeading: initialPresence.heading.degrees,
+          newHeading: closestDirectionResult.link.heading,
+        });
+        this.presenceSource.next({
+          position: initialLatLong,
+          heading: { degrees: closestDirectionResult.link.heading },
+          world: { pano: closestDirectionResult.link.pano! },
+        });
+      });
+    }
     return this.presenceSource.asObservable();
   }
 
@@ -83,62 +75,74 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
       .subscribe((movement) => this.handleMovement(movement));
   }
 
-  private async handleMovement(
-    movement: MovementRequest,
-  ) {
+  private handleMovement(movement: Movement) {
     const presence = this.presenceSource.value; // Hacky
 
     console.log("[sv] handleMovement", { presence, movement });
 
-    const [currentLat, currentLon] = presence.position;
-
     // Check if close to a route nav point
-    const junction = this.route.queryJunction(presence.position);
-    if (junction) {
-      console.log("[sv] Close to a route nav point!", junction);
+    const junctionResult = this.route.queryJunction(presence.position);
+    if (junctionResult) {
+      console.log("[sv] junctionResult", junctionResult);
     }
 
-    // If we're not close to a route nav point, use panorama links to determine direction:
-    const panoLinks = await this.linkResolver(presence.position);
-    if (!panoLinks || panoLinks.length === 0) {
-      console.log("[sv] No links available!");
-      return; // TODO: MOVE ANYWAY LOL
+    // If we're near a junction, consider whether movement takes us past it or not
+    if (junctionResult?.isNearNext) {
+      if (junctionResult.distanceToNext < movement.meters) {
+        // Will move past end of current step
+        const movementPastJunction = movement.meters -
+          junctionResult.distanceToNext;
+        console.log("[sv]   moving past junction", {
+          movementPastJunction,
+          distanceToUpcomingJunction: junctionResult.distanceToNext,
+        });
+        const { nextJunction } = junctionResult;
+
+        // If no next junction, we reach the end of the route
+        if (!nextJunction) {
+          console.log("[sv]   Reached end of route");
+          const newPosition = toLatLong(
+            junctionResult.prevJunction.nextPosition,
+          );
+          this.presenceSource.next({
+            position: newPosition,
+            heading: { degrees: presence.heading.degrees },
+            world: { pano: "" },
+          });
+          return;
+        }
+
+        // Find position from upcoming junction, after having moved past it
+        const newDirection = nextJunction?.directionOut ??
+          presence.heading.degrees; // TODO: Correct based on links
+        const newPosition = google.maps.geometry.spherical.computeOffset(
+          new google.maps.LatLng(toGoogleLatLongLiteral(nextJunction.position)),
+          movementPastJunction,
+          newDirection,
+        );
+        this.presenceSource.next({
+          position: [newPosition.lat(), newPosition.lng()],
+          heading: { degrees: newDirection },
+          world: { pano: "" },
+        });
+        return;
+      }
+
+      // Will not move past junction - fall through to keep moving towards it using current heading
     }
 
-    const nextDirection = (junction && junction.junction.distance < 10)
-      ? junction.junction.turnDirection
-      : presence.heading.degrees;
-
-    console.log("[sv] Next direction determined", {
-      current: presence.heading.degrees,
-      ...(junction &&
-        {
-          junctionDistance: junction?.junction.distance,
-          junctionDirection: junction?.junction.turnDirection,
-        }),
-      nextDirection,
-    });
-
-    const bestMatchLink = findClosestDirection(
-      nextDirection,
-      panoLinks,
+    // If we're NOT close to a route nav point, move along in current direction
+    console.log("[sv] Moving towards junction", { junctionResult });
+    const newPosition = google.maps.geometry.spherical.computeOffset(
+      new google.maps.LatLng(toGoogleLatLongLiteral(presence.position)),
+      movement.meters,
+      presence.heading.degrees,
     );
-
-    const newHeading = bestMatchLink.link.heading;
-    const newPosition: { latitude: number; longitude: number } =
-      computeDestinationPoint(
-        { latitude: currentLat, longitude: currentLon },
-        movement.meters,
-        newHeading,
-      );
-
-    const newPresence = {
-      position: [newPosition.latitude, newPosition.longitude] satisfies LatLong,
-      heading: { degrees: newHeading },
-      world: { pano: bestMatchLink.link.pano! },
-    };
-    console.log("[sv] New presence determined", newPresence);
-
-    this.presenceSource.next(newPresence);
+    // TODO: Correct heading based on links
+    this.presenceSource.next({
+      position: toLatLong(newPosition),
+      heading: { degrees: presence.heading.degrees },
+      world: { pano: "" },
+    });
   }
 }
