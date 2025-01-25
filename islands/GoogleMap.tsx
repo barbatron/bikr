@@ -16,7 +16,8 @@ import {
 import { useObservable } from "../hooks/useObservable.ts";
 import { googleMapsRouteContext } from "./GoogleMapsRouteContext.tsx";
 
-const posToStr = (pos: (number | undefined)[]) =>
+const posToStr = (pos: LatLong) =>
+  // @ts-ignore - we know it's a number array
   `(${pos.map((x) => x?.toFixed(5).padStart(10)).join(", ")})`;
 
 export type GoogleMapProps = {
@@ -83,7 +84,7 @@ export default function GoogleMap(
         preserveViewport: true,
         draggable: false,
         routeIndex: 0,
-        directions: route.route,
+        directions: route.directionsResult,
       });
     }
     setMap(newMap);
@@ -223,7 +224,7 @@ export default function GoogleMap(
     )
     : null;
   const mapC = (map as google.maps.Map)?.getCenter();
-  const mapPos = useMemo(() => posToStr([mapC?.lat(), mapC?.lng()]), [
+  const mapPos = useMemo(() => posToStr([mapC?.lat() ?? 0, mapC?.lng() ?? 0]), [
     mapC?.lat(),
     mapC?.lng(),
   ]);
