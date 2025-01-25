@@ -42,7 +42,12 @@ export default function GoogleMap(
     presence,
     {
       position: startPosition,
-      heading: { degrees: startDirection },
+      heading: {
+        degrees:
+          (route.status === "loaded"
+            ? route.routeTracker?.junctions[0].directionOut
+            : undefined) ?? startDirection,
+      },
       world: {},
     },
   );
@@ -80,6 +85,7 @@ export default function GoogleMap(
       streetViewControl: false,
       ...(hasRoute && { tilt: 75 }),
     });
+
     if (hasRoute) {
       new google.maps.DirectionsRenderer({
         map: newMap,
@@ -90,6 +96,13 @@ export default function GoogleMap(
       });
     }
     setMap(newMap);
+    // const timer = setInterval(() => {
+    //   const dir = (Date.now() / 1000 * 30) % 360;
+    //   newMap.setHeading(dir);
+    // }, 1000);
+    // return () => {
+    //   clearInterval(timer);
+    // };
   }, [mapRef.current]);
 
   // Street view panorama initialization
@@ -281,6 +294,13 @@ export default function GoogleMap(
           onClick={() => void triggerSpeed(5)}
         >
           5 kph
+        </button>
+        <button
+          class="bg-gray-700"
+          style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
+          onClick={() => void triggerSpeed(40)}
+        >
+          40 kph
         </button>
       </div>
 

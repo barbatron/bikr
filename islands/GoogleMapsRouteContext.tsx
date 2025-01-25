@@ -30,6 +30,7 @@ type GoogleMapsRouteContext = { status: "loading" } | {
 } | {
   status: "loaded";
   directionsResult: DirectionsResultWithAtLeastOneRoute;
+  routeTracker?: GoogleMapsRouteTracker;
 };
 
 function hasAtLeastOneRoute(
@@ -53,11 +54,9 @@ export default function GoogleMapsRouteContext(
 
   console.log("[gmrc] Load route", { startAt, endAt });
 
-  const [value, setValue] = useState<GoogleMapsRouteContext>(
-    !mockData
-      ? { status: "loading" }
-      : { status: "loaded", directionsResult: mockData[0] },
-  );
+  const [value, setValue] = useState<GoogleMapsRouteContext>({
+    status: "loading",
+  });
 
   useEffect(() => {
     if (value.status !== "loading") return; // TODO: Test helper, remove
@@ -119,6 +118,7 @@ export default function GoogleMapsRouteContext(
     const linkResolver = noLinksResolver;
     const junctions = gmRouteToJunctions(value.directionsResult.routes[0]);
     const routeTracker = new GoogleMapsRouteTracker(junctions);
+    value.routeTracker = routeTracker;
     worldSource.next(
       new StreetViewWorld({
         route: routeTracker,
@@ -126,6 +126,7 @@ export default function GoogleMapsRouteContext(
       }),
     );
   });
+
   return (
     <googleMapsRouteContext.Provider value={value}>
       {value.status === "loaded" ? children : <p>Loading route...</p>}

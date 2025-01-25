@@ -7,7 +7,7 @@ import { TestWorld } from "./world/test-world.ts";
 
 // deno-lint-ignore no-unused-vars
 const flatenStart = { pos: { lat: 59.2618299, lng: 18.1304439 }, dir: 90 };
-const nackaStart = { pos: { lat: 59.2848213, lng: 18.2077248 }, dir: 270 };
+const nackaStart = { pos: { lat: 59.2849298, lng: 18.180308 }, dir: 270 };
 
 export const bikeRoute = {
   routeStart: nackaStart,

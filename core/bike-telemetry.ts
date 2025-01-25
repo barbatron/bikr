@@ -1,54 +1,22 @@
-import { IS_BROWSER } from "$fresh/runtime.ts";
+import { signal } from "@preact/signals-core";
 import { Buffer } from "node:buffer";
-import { URL } from "node:url";
 import mqtt from "npm:mqtt";
 import { BehaviorSubject, map, merge, Subject } from "npm:rxjs";
 import { filter } from "npm:rxjs/operators";
 
-const urlBase = new URL(Deno.env.get("MQTT_BROKER_URL")!);
-urlBase.port = IS_BROWSER
-  ? "1884" // websockets from browser
-  : "1883"; // something else from server
-const url = urlBase.toString();
-
-const mqttConfig = {
-  urlBase: Deno.env.get("MQTT_BROKER_URL")!,
-  url,
-  username: Deno.env.get("MQTT_BROKER_USERNAME")!,
-  password: Deno.env.get("MQTT_BROKER_PASSWORD")!,
+export type MqttBikeTelemetryConfig = {
+  url: string;
+  username: string;
+  password: string;
 };
 
-console.log("[biketel] connecting mqtt", { ...mqttConfig, password: "****" });
-
-const client = mqtt.connect(url, {
-  username: Deno.env.get("MQTT_BROKER_USERNAME")!,
-  password: Deno.env.get("MQTT_BROKER_PASSWORD")!,
-});
+export const mqttBikeTelemetryConfig = signal<
+  MqttBikeTelemetryConfig | undefined
+>(undefined);
 
 const speedTopic = "homeassistant/sensor/spinboi_speed/state";
 
-client.on("connect", () => {
-  console.log("[biketel] connected");
-  client.subscribe(speedTopic, (err) => {
-    if (!err) {
-      // client.publish("presence", "Hello mqtt");
-      console.log(`subscribed to ${speedTopic}`);
-    } else {
-      console.error("error subscribing", err);
-    }
-  });
-});
-
-client.on("error", (err) => {
-  console.error("[biketel] error", err);
-});
-
 const messageSource = new Subject<[string, Buffer]>();
-client.on(
-  "message",
-  (topic, message) => void messageSource.next([topic, message]),
-);
-
 const manualSpeedSource = new BehaviorSubject<number>(0);
 
 const bikeSpeedSource = messageSource.pipe(
@@ -71,3 +39,33 @@ export const triggerSpeed = (speedKph: number) => {
   console.log("[biketel] triggerSpeed", speedKph);
   manualSpeedSource.next(speedKph);
 };
+
+export function connectBikeTelemetry(
+  { url, username, password }: MqttBikeTelemetryConfig,
+) {
+  const client = mqtt.connect(url, {
+    username,
+    password,
+  });
+
+  client.on("connect", () => {
+    console.log("[biketel] connected");
+    client.subscribe(speedTopic, (err) => {
+      if (!err) {
+        // client.publish("presence", "Hello mqtt");
+        console.log(`subscribed to ${speedTopic}`);
+      } else {
+        console.error("error subscribing", err);
+      }
+    });
+  });
+
+  client.on("error", (err) => {
+    console.error("[biketel] error", err);
+  });
+
+  client.on(
+    "message",
+    (topic, message) => void messageSource.next([topic, message]),
+  );
+}

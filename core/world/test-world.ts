@@ -8,6 +8,8 @@ import {
   Presence,
   World,
 } from "../types.ts";
+import { toLatLong } from "./streetview/streetview-utils.ts";
+import { toGoogleLatLongLiteral } from "./streetview/index.ts";
 
 type TestSpecific = { timestamp: string; index: number };
 type TestPresence = Presence<LatLong, AngleDegrees, TestSpecific>;
@@ -16,7 +18,7 @@ export class TestWorld implements World<TestPresence> {
   presence: BehaviorSubject<TestPresence>;
   constructor() {
     this.presence = new BehaviorSubject({
-      position: [0, 0],
+      position: toLatLong([0, 0]),
       heading: { degrees: 0 },
       world: { timestamp: new Date().toISOString(), index: 0 },
     });
@@ -59,8 +61,8 @@ export class TestWorld implements World<TestPresence> {
     };
 
     const posDiff = getPreciseDistance(
-      prevPresence.position,
-      newPositionLatLong,
+      toGoogleLatLongLiteral(prevPresence.position),
+      toGoogleLatLongLiteral(newPositionLatLong),
     );
     const dirDiff = newPresence.heading.degrees - prevPresence.heading.degrees;
 

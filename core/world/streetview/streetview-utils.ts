@@ -102,15 +102,17 @@ export function gmRouteToJunctions(
       console.warn("[gmrt:gmRouteToJunctions] Zero step length", step);
     }
     const startDistance = (totalDistance += stepLength);
+    let heading = google.maps.geometry.spherical.computeHeading(
+      step.start_location,
+      step.end_location,
+    );
+    if (heading < 0) heading += 360;
     junctions.push({
       position: toGoogleLatLongLiteral(step.start_location),
       nextPosition: toGoogleLatLongLiteral(step.end_location),
       startDistance,
       stepLength,
-      directionOut: google.maps.geometry.spherical.computeHeading(
-        step.start_location,
-        step.start_location,
-      ),
+      directionOut: heading,
       maneuver: step.maneuver,
       htmlInstructions: step.instructions,
     });
