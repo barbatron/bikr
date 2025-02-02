@@ -3,24 +3,21 @@ import { assert } from "$std/assert/assert.ts";
 import { ComponentChildren, createContext } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { worldSource } from "../core/session-main.ts";
+import { bufferMovements } from "../core/utils.ts";
 import {
   GoogleMapsRouteTracker,
 } from "../core/world/streetview/gm-route-tracker.ts";
 import {
   gmRouteToJson,
+  gmRouteToRoutePoints,
   StreetViewWorld,
 } from "../core/world/streetview/index.ts";
-import {
-  gmRouteToJunctions,
-  noLinksResolver,
-} from "../core/world/streetview/streetview-utils.ts";
+import { noLinksResolver } from "../core/world/streetview/streetview-utils.ts";
 
 type GoogleMapsRouteContextProps = {
   startAt: google.maps.DirectionsRequest["origin"];
   endAt: google.maps.DirectionsRequest["destination"];
   children: ComponentChildren;
-  // deno-lint-ignore no-explicit-any
-  mockData?: any;
 };
 
 type DirectionsResultWithAtLeastOneRoute = google.maps.DirectionsResult & {
@@ -47,7 +44,7 @@ export const googleMapsRouteContext = createContext<GoogleMapsRouteContext>({
 });
 
 export default function GoogleMapsRouteContext(
-  { startAt, endAt, children, mockData }: GoogleMapsRouteContextProps,
+  { startAt, endAt, children }: GoogleMapsRouteContextProps,
 ) {
   if (!IS_BROWSER) {
     return (
@@ -117,6 +114,7 @@ export default function GoogleMapsRouteContext(
     if (value.status !== "loaded") return;
     console.log("[gmrc] Route loaded");
 
+    // Toss the route to the server for inspection/debugging
     void fetch("/route", {
       method: "POST",
       headers: {
@@ -128,13 +126,14 @@ export default function GoogleMapsRouteContext(
     });
 
     const linkResolver = noLinksResolver;
-    const junctions = gmRouteToJunctions(value.directionsResult.routes[0]);
-    const routeTracker = new GoogleMapsRouteTracker(junctions);
+    const routePoints = gmRouteToRoutePoints(value.directionsResult.routes[0]);
+    const routeTracker = new GoogleMapsRouteTracker(routePoints);
     value.routeTracker = routeTracker;
     worldSource.next(
       new StreetViewWorld({
         route: routeTracker,
         linkResolver,
+        movementsModifier: bufferMovements(1000),
       }),
     );
   }, [value.status]);

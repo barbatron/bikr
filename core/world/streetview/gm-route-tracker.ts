@@ -1,10 +1,10 @@
-import { AngleDegrees, LatLong } from "../../types.ts";
-import { toGoogleLatLongLiteral } from "./streetview-utils.ts";
+import { AngleDegrees } from "../../types.ts";
+import { toGoogleLatLongLiteral, toLatLong } from "./streetview-utils.ts";
 import {
-  GoogleLatLngAny,
-  Junction,
-  QueryJunctionResult,
+  GoogleStreetViewPresence,
   RouteLike,
+  RoutePoint,
+  RoutePresence,
 } from "./types.ts";
 
 export class GoogleMapsRouteTracker
@@ -12,108 +12,55 @@ export class GoogleMapsRouteTracker
   private lastMatchIndex = 0;
 
   public constructor(
-    public readonly junctions: ReadonlyArray<
-      Junction<google.maps.LatLngLiteral>
+    public readonly routePoints: ReadonlyArray<
+      RoutePoint<google.maps.LatLngLiteral>
     >,
   ) {
-    if (!junctions.length) throw Error("Empty junctions array");
+    if (!routePoints.length) throw Error("Empty junctions array");
   }
 
   getInitialPresence() {
-    const [firstJunction] = this.junctions;
+    const [first] = this.routePoints;
     return {
-      position: toGoogleLatLongLiteral(firstJunction.position),
-      heading: { degrees: firstJunction.directionOut! },
+      position: toGoogleLatLongLiteral(first.position),
+      heading: { degrees: first.headingOut!.absolute },
     };
   }
 
-  junctionContextFromTotalDistance(totalDistance: number) {
-    const prevJunction = this.junctions.find((j) =>
-      totalDistance >= j.startDistance &&
-      totalDistance < (j.startDistance + j.stepLength)
+  queryPresence(
+    totalDistance: number,
+  ): RoutePresence | undefined {
+    // Find route point that started before the given totalDistance and ends after it
+    const routePoints = this.routePoints.filter(
+      (rp) =>
+        rp.totalDistance <= totalDistance &&
+        (rp.totalDistance + (rp.distanceToNext ?? 0)) >= totalDistance,
     );
-    if (!prevJunction) {
-      console.warn(
-        "[gmrt] No junction found for total distance - end of route",
+    if (routePoints.length === 0) {
+      console.error(
+        "[gmrt:queryPresence] No route points found for totalDistance",
         totalDistance,
       );
-      // TODO: Stream complete
       return;
     }
-    const distanceToNext = prevJunction.startDistance +
-      prevJunction.stepLength - totalDistance;
-    const stepFraction = distanceToNext / prevJunction.stepLength;
-    const position = google.maps.geometry.spherical.interpolate(
-      prevJunction.position,
-      prevJunction.nextPosition,
-      stepFraction,
-    );
-    const directionFromCurrent = google.maps.geometry.spherical.computeHeading(
-      position,
-      prevJunction.nextPosition,
-    );
-    const prevJunctionIndex = this.junctions.indexOf(prevJunction);
-    const nextJunction = prevJunctionIndex > -1
-      ? this.junctions[prevJunctionIndex + 1]
-      : undefined;
-    const junctionContext = {
-      position: toGoogleLatLongLiteral(position),
-      distanceToNext,
-      directionFromCurrent,
-      prevJunction,
-      nextJunction,
-    };
-    console.log("[gmrt] Junction context from total distance", junctionContext);
-    return junctionContext;
-  }
-
-  public bumpToNextJunction() {
-    console.log("[gmrt] Bumping to next junction", {
-      currentIndex: this.lastMatchIndex,
-      nextIndex: this.lastMatchIndex + 1,
-    });
-    this.lastMatchIndex++;
-  }
-
-  queryJunction(
-    positionLatLong: GoogleLatLngAny | LatLong,
-  ): QueryJunctionResult<google.maps.LatLngLiteral> | undefined {
-    const position = toGoogleLatLongLiteral(positionLatLong);
-    if (this.lastMatchIndex >= this.junctions.length - 1) {
+    if (routePoints.length > 1) {
       console.warn(
-        "[gmrt] No remaining junctions to query - route completed, STOP BIKING!",
+        "[gmrt:queryPresence] Multiple route points found for totalDistance",
+        totalDistance,
+        routePoints,
       );
-      return;
     }
-
-    const prevJunction = this.junctions[this.lastMatchIndex];
-    const currentDeviation = this.calculateDeviation(
-      position,
-      new google.maps.LatLng(prevJunction.position),
-      new google.maps.LatLng(prevJunction.nextPosition),
+    const [routePoint] = routePoints;
+    const interpolatedPoisition = google.maps.geometry.spherical.computeOffset(
+      routePoint.position,
+      totalDistance - routePoint.totalDistance,
+      routePoint.headingOut!.absolute,
     );
-
-    // If current step distance is very small, use half of that as radius, otherwise 20 meters:
-    const proximityThreshold = Math.min(
-      prevJunction.stepLength ?? Infinity,
-      20,
-    );
-    const prevJunctionIndex = this.junctions.indexOf(prevJunction);
-    const nextJunction = prevJunctionIndex > -1
-      ? this.junctions[prevJunctionIndex + 1]
-      : undefined;
-    const distanceToNext = google.maps.geometry.spherical
-      .computeDistanceBetween(
-        position,
-        new google.maps.LatLng(prevJunction.nextPosition),
-      );
-    const isNearNext = distanceToNext <= proximityThreshold;
     return {
-      currentDeviation,
-      distanceToNext,
-      isNearNext,
-      prevJunction,
-      nextJunction,
+      position: toLatLong(interpolatedPoisition),
+      heading: { degrees: routePoint.headingOut!.absolute },
+      routePoint,
+      routePointIndex: this.routePoints.indexOf(routePoint),
     };
   }
 

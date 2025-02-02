@@ -22,7 +22,7 @@ export type Presence<
   heading: TDirection;
 } & (TWorldSpecific extends never ? Empty : { world: TWorldSpecific });
 
-export type Movement = DistanceMeters; // & Heading;
+export type Movement = { relative: DistanceMeters; total: DistanceMeters };
 
 export type MovementRequest = Movement;
 

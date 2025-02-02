@@ -45,7 +45,7 @@ export default function GoogleMap(
       heading: {
         degrees:
           (route.status === "loaded"
-            ? route.routeTracker?.junctions[0].directionOut
+            ? route.routeTracker?.routePoints[0].headingOut?.absolute
             : undefined) ?? startDirection,
       },
       world: {},

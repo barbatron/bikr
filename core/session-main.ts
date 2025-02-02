@@ -59,7 +59,8 @@ export const movementSource = distanceSource
         totalDistance,
       });
       const movement: Movement = {
-        meters: distanceMeters,
+        relative: { meters: distanceMeters },
+        total: { meters: totalDistance },
       };
       return movement;
     }),

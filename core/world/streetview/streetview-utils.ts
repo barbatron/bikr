@@ -1,6 +1,6 @@
 import { LatLong } from "../../types.ts";
 import { diffHeading, isLatLong } from "../../utils.ts";
-import { GoogleLatLngAny, Junction } from "./types.ts";
+import { GoogleLatLngAny, Junction, RoutePoint } from "./types.ts";
 
 export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
   heading: number;
@@ -89,6 +89,87 @@ export const createMapsApiLinksResolver =
     });
   };
 
+type PathPoint = {
+  position: google.maps.LatLng;
+  step: google.maps.DirectionsStep;
+  stepPathIndex: number;
+};
+
+const pathPointToRoutePoint = () => {
+  const totalDistanceAccumulator = { totalDistance: 0 };
+  return (
+    pathPoint: PathPoint,
+    i: number,
+    pathPoints: PathPoint[],
+  ): RoutePoint<google.maps.LatLngLiteral> => {
+    const { position, step, stepPathIndex } = pathPoint;
+    const prevPathPoint = i > 0 ? pathPoints[i - 1].position : undefined;
+    const nextPathPoint = pathPoints[i + 1]?.position;
+    const headingInRel = prevPathPoint
+      ? google.maps.geometry.spherical.computeHeading(prevPathPoint, position)
+      : undefined;
+    const headingOutRel = nextPathPoint
+      ? google.maps.geometry.spherical.computeHeading(position, nextPathPoint)
+      : undefined;
+    const junctionInfo = stepPathIndex === 0
+      ? { maneuver: step.maneuver, htmlInstructions: step.instructions }
+      : undefined;
+    const distanceToNext = nextPathPoint
+      ? google.maps.geometry.spherical.computeDistanceBetween(
+        position,
+        nextPathPoint,
+      )
+      : undefined;
+    const routePoint: RoutePoint<google.maps.LatLngLiteral> = {
+      position: toGoogleLatLongLiteral(position),
+      totalDistance: totalDistanceAccumulator.totalDistance,
+      distanceToNext,
+      headingIn: headingInRel
+        ? {
+          relative: headingInRel,
+          absolute: headingInRel > 0 ? headingInRel : headingInRel + 360,
+        }
+        : undefined,
+      headingOut: headingOutRel
+        ? {
+          relative: headingOutRel,
+          absolute: headingOutRel > 0 ? headingOutRel : headingOutRel + 360,
+        }
+        : undefined,
+      junctionInfo,
+    };
+    totalDistanceAccumulator.totalDistance += google.maps.geometry.spherical
+      .computeDistanceBetween(
+        prevPathPoint ?? position,
+        position,
+      );
+    return routePoint;
+  };
+};
+
+export function gmRouteToRoutePoints(
+  route: google.maps.DirectionsRoute,
+): RoutePoint<google.maps.LatLngLiteral>[] {
+  const allPathPoints = route.legs.flatMap((leg) =>
+    leg.steps.flatMap((step) =>
+      // Skip last path point, as it's the same as the next step's first point
+      step.path.slice(0, -1).map((p, i) => {
+        return { position: p, step, stepPathIndex: i };
+      })
+    )
+  );
+  const routePoints = allPathPoints.map(pathPointToRoutePoint());
+  for (let i = 0; i < routePoints.length; i++) {
+    console.log(
+      `[gmrt:gmRouteToRoutePoints] RoutePoint ${i.toString().padStart(3)}/${
+        routePoints.length.toString().padStart(3)
+      }`,
+      routePoints[i],
+    );
+  }
+  return routePoints;
+}
+
 export function gmRouteToJunctions(
   route: google.maps.DirectionsRoute,
 ): Junction<google.maps.LatLngLiteral>[] {
@@ -102,20 +183,33 @@ export function gmRouteToJunctions(
       console.warn("[gmrt:gmRouteToJunctions] Zero step length", step);
     }
     const startDistance = (totalDistance += stepLength);
-    let heading = google.maps.geometry.spherical.computeHeading(
-      step.start_location,
-      step.end_location,
+
+    const startPos = step.path[0];
+    const nextPos = step.path[1];
+    const headingOutRel = google.maps.geometry.spherical.computeHeading(
+      startPos,
+      nextPos,
     );
-    if (heading < 0) heading += 360;
-    junctions.push({
+    const headingOutAbs = headingOutRel > 0
+      ? headingOutRel
+      : (headingOutRel + 360);
+    const junction: Junction<google.maps.LatLngLiteral> = {
       position: toGoogleLatLongLiteral(step.start_location),
       nextPosition: toGoogleLatLongLiteral(step.end_location),
       startDistance,
       stepLength,
-      directionOut: heading,
+      directionOut: { relative: headingOutRel, absolute: headingOutAbs },
       maneuver: step.maneuver,
       htmlInstructions: step.instructions,
-    });
+      path: step.path.map(toGoogleLatLongLiteral),
+    };
+    console.log(
+      `[gmrt:gmRouteToJunctions] Junction ${i.toString().padStart(3)}/${
+        allSteps.length.toString().padStart(3)
+      }`,
+      junction,
+    );
+    junctions.push(junction);
   }
   return junctions;
 }
@@ -143,29 +237,29 @@ export function gmRouteToJson(
   return JSON.stringify(jsonResult, null, 2);
 }
 
-export function gmRouteFromJson(
-  json: string,
-) {
-  const obj = JSON.parse(json);
-  const routes = obj.routes.map((r: any) => ({
-    ...r,
-    bounds: new google.maps.LatLngBounds(
-      r.bounds.southwest,
-      r.bounds.northeast,
-    ),
-    legs: r.legs.map((l: any) => ({
-      ...l,
-      start_location: new google.maps.LatLng(l.start_location),
-      end_location: new google.maps.LatLng(l.end_location),
-      steps: l.steps.map((s: any) => ({
-        ...s,
-        start_location: new google.maps.LatLng(s.start_location),
-        end_location: new google.maps.LatLng(s.end_location),
-      })),
-    })),
-  }));
-  return {
-    ...obj,
-    routes,
-  };
-}
+// export function gmRouteFromJson(
+//   json: string,
+// ) {
+//   const obj = JSON.parse(json);
+//   const routes = obj.routes.map((r: any) => ({
+//     ...r,
+//     bounds: new google.maps.LatLngBounds(
+//       r.bounds.southwest,
+//       r.bounds.northeast,
+//     ),
+//     legs: r.legs.map((l: google.maps.DirectionsLeg) => ({
+//       ...l,
+//       start_location: new google.maps.LatLng(l.start_location),
+//       end_location: new google.maps.LatLng(l.end_location),
+//       steps: l.steps.map((s: google.maps.DirectionsStep) => ({
+//         ...s,
+//         start_location: new google.maps.LatLng(s.start_location),
+//         end_location: new google.maps.LatLng(s.end_location),
+//       })),
+//     })),
+//   }));
+//   return {
+//     ...obj,
+//     routes,
+//   };
+// }

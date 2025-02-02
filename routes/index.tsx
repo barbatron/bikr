@@ -1,4 +1,4 @@
-import { useEffect } from "preact/hooks";
+import { IS_BROWSER } from "$fresh/runtime.ts";
 import {
   connectBikeTelemetry,
   MqttBikeTelemetryConfig,
@@ -9,7 +9,6 @@ import { streetViewLinks } from "../core/world/streetview/index.ts";
 import GoogleMap from "../islands/GoogleMap.tsx";
 import GoogleMapsLibraryContext from "../islands/GoogleMapsLibraryContext.tsx";
 import GoogleMapsRouteContext from "../islands/GoogleMapsRouteContext.tsx";
-import { IS_BROWSER } from "$fresh/runtime.ts";
 
 const mqttConfig: MqttBikeTelemetryConfig = {
   url: Deno.env.get("MQTT_BROKER_URL")!,

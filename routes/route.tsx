@@ -6,7 +6,7 @@ export const handler: Handlers = {
     console.log("[route] POST");
     const body = await req.json();
     const outPath = path.join("testdata", "client-route-result.json");
-    await Deno.writeTextFile(outPath, JSON.stringify(body));
+    await Deno.writeTextFile(outPath, JSON.stringify(body, null, 2));
     console.log(`[route] Wrote ${outPath}`);
     return new Response(null, {
       status: 201,
