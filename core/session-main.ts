@@ -14,10 +14,7 @@ export const bikeRoute = {
   routeEnd: "Tyresö Centrum, 135 40 Tyresö",
 };
 
-export const startPosition: LatLong = [
-  bikeRoute.routeStart.pos.lat,
-  bikeRoute.routeStart.pos.lng,
-];
+export const startPosition = bikeRoute.routeStart.pos;
 
 export const startDirection = bikeRoute.routeStart.dir;
 

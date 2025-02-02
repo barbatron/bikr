@@ -114,7 +114,7 @@
                   "lng": 18.17962
                 }
               ],
-              "instructions": "Head <b>west</b> on <b>Snöromsvägen</b> toward <b>Ältavägen</b>/<wbr/><b>Route 260</b><div style=\"font-size:0.9em\">Restricted usage road</div>",
+              "instructions": "Head <b>west</b> on <b>Snöromsvägen</b> towards <b>Ältavägen</b>/<wbr/><b>Route 260</b><div style=\"font-size:0.9em\">Restricted-usage road</div>",
               "maneuver": "",
               "start_point": {
                 "lat": 59.28501559999999,
@@ -930,7 +930,7 @@
                   "lng": 18.17491
                 }
               ],
-              "instructions": "Turn <b>right</b> toward <b>Stora Vägen</b>",
+              "instructions": "Turn <b>right</b> towards <b>Stora Vägen</b>",
               "start_point": {
                 "lat": 59.2734061,
                 "lng": 18.1760159
@@ -5505,7 +5505,7 @@
                   "lng": 18.229860000000002
                 }
               ],
-              "instructions": "Turn <b>right</b> toward <b>Regnbågsgatan</b>/<wbr/><b>Östangränd</b>",
+              "instructions": "Turn <b>right</b> towards <b>Regnbågsgatan</b>/<wbr/><b>Östangränd</b>",
               "start_point": {
                 "lat": 59.2465009,
                 "lng": 18.2299632
@@ -5843,7 +5843,7 @@
       "overview_polyline": "kbzhJaz}mBA|@FnAXSd@i@lAmA`CoCtF}FfAiAb@[l@W`@Mr@Ef@DbAb@jAjAZf@tBtEpJzTzAnCnA|Ah@f@vAdAlAt@`Ab@l@J^@h@If@Cr@OzAi@fAe@HBXM@RER?ZHZLVd@l@zAnBn@v@LJPLHUb@_BP_@|@wAn@aA^]VQpA_@ZKHGVi@Xq@f@mASaAAMEa@HB\\Fx@Pp@P`@DjAX~@PR?XDLD\\?@A?C@ADCBAD@NoBLi@NYFMTQrBy@bAk@TOJQb@_An@qA|@q@n@i@`@g@LYd@yAVo@rAgB~A_CPi@Ji@NgCVqAFOZgA^uAVuA\\i@LEh@QVIVQZk@n@eB`AcCJMbAm@`@WI{@i@_GY}DCqAH}Ab@kDPiDb@Hh@DPANGNUbAeDdCoIfAgEDBJKDUv@jAvBeH|BwHRm@HKTSf@f@dA`A`C`C`@b@RsAJw@VmBd@_DH[rB}DjAsBVq@Nk@b@oBvAcH|@{Df@eBv@kCZVHFN?RU~@cCd@wBZuAb@qATw@f@sB^@PQRm@^eBbCuKdA}Ep@uCj@yDNgBDe@LkCBcB?cAC{BGoAIg@Qy@OU_@QYq@G]Da@Xm@d@u@RSPCLCl@MZE`@GRENCTw@h@mB@EXgAJk@Di@A{@Iw@YsBa@wCW}BKuCAy@@_@DUVMN?JGTc@JWr@cBJUJOHl@@PLIj@c@`Ay@\\qBbAyGVcCJaA\\VFEH?fA@AoA`ACj@@b@?dBDTDf@\\LP@r@DXj@`A",
       "summary": "Ältavägen/Route 260",
       "warnings": [
-        "Bicycling directions are in beta. Use caution – This route may contain streets that aren't suited for bicycling."
+        "Cycling directions are in beta. Use caution – This route may contain streets that aren't suitable for cycling."
       ],
       "waypoint_order": [],
       "overview_path": [

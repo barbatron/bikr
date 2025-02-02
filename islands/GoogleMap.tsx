@@ -1,5 +1,4 @@
 import type { Signal } from "@preact/signals-core";
-import { getPreciseDistance } from "geolib";
 import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { triggerSpeed } from "../core/bike-telemetry.ts";
 import {
@@ -11,15 +10,13 @@ import { LatLong } from "../core/types.ts";
 import {
   findClosestDirection,
   StreetViewLinkWithHeading,
-  toValidLinks,
 } from "../core/world/streetview/index.ts";
+import { GoogleStreetViewPresenceWorldData } from "../core/world/streetview/types.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 import { googleMapsRouteContext } from "./GoogleMapsRouteContext.tsx";
-import { GoogleStreetViewPresenceWorldData } from "../core/world/streetview/types.ts";
 
-const posToStr = (pos: LatLong) =>
-  // @ts-ignore - we know it's a number array
-  `(${pos.map((x) => x?.toFixed(5).padStart(10)).join(", ")})`;
+const posToStr = ({ lat, lng }: LatLong) =>
+  `(${[lat, lng].map((x) => x?.toFixed(5).padStart(10)).join(", ")})`;
 
 export type GoogleMapProps = {
   mapId: string;
@@ -54,11 +51,8 @@ export default function GoogleMap(
   );
 
   const tripPosLatLng = useMemo<google.maps.LatLngLiteral>(
-    () => ({
-      lat: trip.position[0],
-      lng: trip.position[1],
-    }),
-    [trip.position[0], trip.position[1]],
+    () => trip.position,
+    [trip.position.lat, trip.position.lng],
   );
   const tripDirection = trip.heading.degrees;
 
@@ -164,11 +158,12 @@ export default function GoogleMap(
       streetViewLinks.value,
     )
     : null;
-  const mapC = (map as google.maps.Map)?.getCenter();
-  const mapPos = useMemo(() => posToStr([mapC?.lat() ?? 0, mapC?.lng() ?? 0]), [
-    mapC?.lat(),
-    mapC?.lng(),
-  ]);
+  const mapC = (map as google.maps.Map)?.getCenter()?.toJSON() ??
+    { lat: 0, lng: 0 };
+  const mapPos = useMemo(
+    () => posToStr(mapC),
+    [mapC.lat, mapC.lng],
+  );
 
   return (
     <div class="flex flex-col" style={{ height: "100vh" }}>

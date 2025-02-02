@@ -1,6 +1,6 @@
-import { LatLong } from "../../types.ts";
-import { diffHeading, isLatLong } from "../../utils.ts";
-import { GoogleLatLngAny, RoutePoint } from "./types.ts";
+import { LatLong, RoutePoint } from "../../types.ts";
+import { diffHeading } from "../../utils.ts";
+import { GoogleLatLngAny } from "./types.ts";
 
 export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
   heading: number;
@@ -49,23 +49,13 @@ export function findClosestDirection<
 export function toGoogleLatLongLiteral(
   latLng: GoogleLatLngAny | LatLong,
 ): google.maps.LatLngLiteral {
-  if (latLng instanceof Array) {
-    // Is LatLong
-    return { lat: latLng[0], lng: latLng[1] };
-  }
-  return latLng instanceof google.maps.LatLng ? latLng.toJSON() : latLng;
-}
-
-export function toLatLong(
-  latLng: GoogleLatLngAny | LatLong,
-): LatLong {
-  if (isLatLong(latLng)) return latLng;
-  if (latLng instanceof google.maps.LatLng) return [latLng.lat(), latLng.lng()];
-  return [latLng.lat, latLng.lng];
+  return "toJSON" in latLng ? latLng.toJSON() : latLng;
 }
 
 export type StreetViewLinkResolver = {
-  (position: LatLong): Promise<StreetViewLinkWithHeading[]>;
+  (
+    position: LatLong | google.maps.LatLngLiteral,
+  ): Promise<StreetViewLinkWithHeading[]>;
 };
 
 export function noLinksResolver(): Promise<StreetViewLinkWithHeading[]> {

@@ -1,11 +1,11 @@
-import { AngleDegrees } from "../../types.ts";
-import { toGoogleLatLongLiteral, toLatLong } from "./streetview-utils.ts";
 import {
-  GoogleLatLngAny,
+  AngleDegrees,
   RouteLike,
   RoutePoint,
   RoutePresence,
-} from "./types.ts";
+} from "../../types.ts";
+import { toGoogleLatLongLiteral } from "./streetview-utils.ts";
+import { GoogleLatLngAny } from "./types.ts";
 
 export class GoogleMapsRouteTracker
   implements RouteLike<google.maps.LatLngLiteral, AngleDegrees> {
@@ -29,7 +29,7 @@ export class GoogleMapsRouteTracker
 
   queryPresence(
     totalDistance: number,
-  ): RoutePresence {
+  ): RoutePresence<google.maps.LatLngLiteral, AngleDegrees> {
     // Find route point that started before the given totalDistance and ends after it
     const routePoints = this.routePoints.filter(
       (rp) =>
@@ -64,9 +64,9 @@ export class GoogleMapsRouteTracker
   private toRoutePointPresence(
     routePoint: RoutePoint<google.maps.LatLngLiteral>,
     position: GoogleLatLngAny = routePoint.position,
-  ) {
+  ): RoutePresence<google.maps.LatLngLiteral, AngleDegrees> {
     return {
-      position: toLatLong(position),
+      position: toGoogleLatLongLiteral(position),
       heading: { degrees: routePoint.headingOut!.absolute },
       routePoint,
       routePointIndex: this.routePoints.indexOf(routePoint),

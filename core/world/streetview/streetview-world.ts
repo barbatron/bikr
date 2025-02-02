@@ -1,15 +1,13 @@
 import { BehaviorSubject, Observable } from "rxjs";
-import { LatLong, Movement, World } from "../../types.ts";
+import { AngleDegrees, Movement, RoutePresence, World } from "../../types.ts";
 import { GoogleMapsRouteTracker } from "./gm-route-tracker.ts";
 import {
   findClosestDirection,
   StreetViewLinkResolver,
-  toLatLong,
 } from "./streetview-utils.ts";
 import {
   GoogleStreetViewPresence,
   GoogleStreetViewPresenceWorldData,
-  RoutePresence,
 } from "./types.ts";
 
 export type StreetViewWorldParams = {
@@ -33,18 +31,19 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
     this.linkResolver = linkResolver;
     this.movementsModifier = movementsModifier ?? ((x) => x);
     const { position, heading } = route.getInitialPresence();
-    const posAsLatLong = toLatLong(position);
     const routePresence = this.route.queryPresence(0);
     this.presenceSource = new BehaviorSubject<GoogleStreetViewPresence>(
       {
-        position: posAsLatLong,
+        position,
         heading,
         world: this.toWorldData(routePresence),
       },
     );
   }
 
-  toWorldData(routePresence: RoutePresence): GoogleStreetViewPresenceWorldData {
+  toWorldData(
+    routePresence: RoutePresence<google.maps.LatLngLiteral, AngleDegrees>,
+  ): GoogleStreetViewPresenceWorldData {
     // Prefer junctionInfo from next route point so that maneuver instructions are presented when closing in on a junction
     const junctionInfo = routePresence?.nextRoutePoint?.junctionInfo ??
       routePresence?.routePoint.junctionInfo;
@@ -68,7 +67,7 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
   }
 
   private async updatePresence(
-    newPosition: LatLong,
+    newPosition: google.maps.LatLngLiteral,
     direction: number,
     worldData: GoogleStreetViewPresenceWorldData,
   ) {

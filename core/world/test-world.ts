@@ -8,7 +8,6 @@ import {
   Presence,
   World,
 } from "../types.ts";
-import { toLatLong } from "./streetview/streetview-utils.ts";
 import { toGoogleLatLongLiteral } from "./streetview/index.ts";
 
 type TestSpecific = { timestamp: string; index: number };
@@ -18,7 +17,7 @@ export class TestWorld implements World<TestPresence> {
   presence: BehaviorSubject<TestPresence>;
   constructor() {
     this.presence = new BehaviorSubject({
-      position: toLatLong([0, 0]),
+      position: { lat: 0, lng: 0 },
       heading: { degrees: 0 },
       world: { timestamp: new Date().toISOString(), index: 0 },
     });
@@ -39,17 +38,17 @@ export class TestWorld implements World<TestPresence> {
     const prevPresence = this.presence.value;
 
     const headingDegrees = prevPresence.heading.degrees;
-    const [lat, lon] = prevPresence.position;
+    const { lat, lng } = prevPresence.position;
     const newPosition = computeDestinationPoint(
-      { lat, lon },
-      movement.meters,
+      { lat, lng },
+      movement.relative.meters,
       headingDegrees,
     );
 
-    const newPositionLatLong: LatLong = [
-      newPosition.latitude,
-      newPosition.longitude,
-    ];
+    const newPositionLatLong = {
+      lat: newPosition.latitude,
+      lng: newPosition.longitude,
+    };
 
     const newPresence = {
       position: newPositionLatLong,
