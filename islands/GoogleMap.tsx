@@ -1,5 +1,12 @@
 import type { Signal } from "@preact/signals-core";
-import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "preact/hooks";
 import { triggerSpeed } from "../core/bike-telemetry.ts";
 import {
   presence,
@@ -130,6 +137,24 @@ export default function GoogleMap(
     setPanorama(newPanorama);
   }, [map, panoRef.current]);
 
+  const [povDiff, setPovDiff] = useState<number | null>(null);
+
+  function animatePanoPov() {
+    if (!panorama) return;
+    if (Math.abs(panorama.getPov().heading - trip.heading.degrees) < 0.5) {
+      setPovDiff(null);
+      return; // done
+    }
+    const p = panorama as google.maps.StreetViewPanorama;
+    const { heading: currentHeading } = p.getPov();
+    const targetHeading = tripDirection;
+    const delta = targetHeading - currentHeading;
+    setPovDiff(delta);
+    const newHeading = currentHeading + (delta / 15);
+    p.setPov({ heading: newHeading, pitch: 0 });
+    setTimeout(animatePanoPov, 1000 / 60);
+  }
+
   // Update map+panorama based on trip position and heading
   useEffect(() => {
     // Center map on marker
@@ -145,10 +170,8 @@ export default function GoogleMap(
     // Update panorama, if exists
     if (panorama) {
       const p = panorama as google.maps.StreetViewPanorama;
-      p.setOptions({
-        position: tripPosLatLng,
-        pov: { heading: tripDirection, pitch: 0 },
-      });
+      p.setPosition(tripPosLatLng);
+      animatePanoPov();
     } else console.warn("Could not set panorama position/pov");
   }, [tripPosLatLng, tripDirection, map]);
 
@@ -187,7 +210,7 @@ export default function GoogleMap(
           </span>
 
           <span style={{ margin: "0.5em", minWidth: "10em" }}>
-            speed: {/*speed.toFixed(1)*/ "???"}
+            👁️Δ: {povDiff?.toFixed(1) ?? "-"}
           </span>
 
           <span style={{ margin: "0.5em", minWidth: "10em" }}>
