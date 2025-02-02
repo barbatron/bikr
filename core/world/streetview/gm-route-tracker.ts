@@ -1,7 +1,7 @@
 import { AngleDegrees } from "../../types.ts";
 import { toGoogleLatLongLiteral, toLatLong } from "./streetview-utils.ts";
 import {
-  GoogleStreetViewPresence,
+  GoogleLatLngAny,
   RouteLike,
   RoutePoint,
   RoutePresence,
@@ -29,7 +29,7 @@ export class GoogleMapsRouteTracker
 
   queryPresence(
     totalDistance: number,
-  ): RoutePresence | undefined {
+  ): RoutePresence {
     // Find route point that started before the given totalDistance and ends after it
     const routePoints = this.routePoints.filter(
       (rp) =>
@@ -37,15 +37,17 @@ export class GoogleMapsRouteTracker
         (rp.totalDistance + (rp.distanceToNext ?? 0)) >= totalDistance,
     );
     if (routePoints.length === 0) {
-      console.error(
-        "[gmrt:queryPresence] No route points found for totalDistance",
+      console.warn(
+        "[gmrt:queryPresence] NO route points found for totalDistance",
         totalDistance,
       );
-      return;
+      return this.toRoutePointPresence(
+        this.routePoints[this.routePoints.length - 1],
+      );
     }
     if (routePoints.length > 1) {
       console.warn(
-        "[gmrt:queryPresence] Multiple route points found for totalDistance",
+        "[gmrt:queryPresence] MULTIPLE route points found for totalDistance",
         totalDistance,
         routePoints,
       );
@@ -56,11 +58,20 @@ export class GoogleMapsRouteTracker
       totalDistance - routePoint.totalDistance,
       routePoint.headingOut!.absolute,
     );
+    return this.toRoutePointPresence(routePoint, interpolatedPoisition);
+  }
+
+  private toRoutePointPresence(
+    routePoint: RoutePoint<google.maps.LatLngLiteral>,
+    position: GoogleLatLngAny = routePoint.position,
+  ) {
     return {
-      position: toLatLong(interpolatedPoisition),
+      position: toLatLong(position),
       heading: { degrees: routePoint.headingOut!.absolute },
       routePoint,
       routePointIndex: this.routePoints.indexOf(routePoint),
+      nextRoutePoint:
+        this.routePoints[this.routePoints.indexOf(routePoint) + 1],
     };
   }
 

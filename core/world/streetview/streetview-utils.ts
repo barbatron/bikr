@@ -1,6 +1,6 @@
 import { LatLong } from "../../types.ts";
 import { diffHeading, isLatLong } from "../../utils.ts";
-import { GoogleLatLngAny, Junction, RoutePoint } from "./types.ts";
+import { GoogleLatLngAny, RoutePoint } from "./types.ts";
 
 export type StreetViewLinkWithHeading = google.maps.StreetViewLink & {
   heading: number;
@@ -168,50 +168,6 @@ export function gmRouteToRoutePoints(
     );
   }
   return routePoints;
-}
-
-export function gmRouteToJunctions(
-  route: google.maps.DirectionsRoute,
-): Junction<google.maps.LatLngLiteral>[] {
-  const allSteps = route.legs.flatMap((leg) => leg.steps);
-  let totalDistance = 0;
-  const junctions: Junction<google.maps.LatLngLiteral>[] = [];
-  for (let i = 0; i < allSteps.length; i++) {
-    const step = allSteps[i];
-    const stepLength = step.distance?.value ?? 0;
-    if (!stepLength) {
-      console.warn("[gmrt:gmRouteToJunctions] Zero step length", step);
-    }
-    const startDistance = (totalDistance += stepLength);
-
-    const startPos = step.path[0];
-    const nextPos = step.path[1];
-    const headingOutRel = google.maps.geometry.spherical.computeHeading(
-      startPos,
-      nextPos,
-    );
-    const headingOutAbs = headingOutRel > 0
-      ? headingOutRel
-      : (headingOutRel + 360);
-    const junction: Junction<google.maps.LatLngLiteral> = {
-      position: toGoogleLatLongLiteral(step.start_location),
-      nextPosition: toGoogleLatLongLiteral(step.end_location),
-      startDistance,
-      stepLength,
-      directionOut: { relative: headingOutRel, absolute: headingOutAbs },
-      maneuver: step.maneuver,
-      htmlInstructions: step.instructions,
-      path: step.path.map(toGoogleLatLongLiteral),
-    };
-    console.log(
-      `[gmrt:gmRouteToJunctions] Junction ${i.toString().padStart(3)}/${
-        allSteps.length.toString().padStart(3)
-      }`,
-      junction,
-    );
-    junctions.push(junction);
-  }
-  return junctions;
 }
 
 export function gmRouteToJson(

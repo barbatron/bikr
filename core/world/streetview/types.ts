@@ -2,25 +2,24 @@ import { AngleDegrees, LatLong, Presence } from "../../types.ts";
 import { StreetViewLinkWithHeading } from "./streetview-utils.ts";
 
 export type RoutePresence =
-  | (
-    & Pick<
-      Presence<
-        LatLong,
-        AngleDegrees
-      >,
-      "position" | "heading"
-    >
-    & {
-      routePoint: RoutePoint<google.maps.LatLngLiteral>;
-      routePointIndex: number;
-    }
-  )
-  | undefined;
+  & Pick<
+    Presence<
+      LatLong,
+      AngleDegrees
+    >,
+    "position" | "heading"
+  >
+  & {
+    routePoint: RoutePoint<google.maps.LatLngLiteral>;
+    nextRoutePoint: RoutePoint<google.maps.LatLngLiteral> | undefined;
+    routePointIndex: number;
+  };
 
 export type GoogleStreetViewPresenceWorldData = {
   pano?: string;
   links?: StreetViewLinkWithHeading[];
   routePresence: RoutePresence;
+  junctionInfo: JunctionInfo | undefined;
 };
 
 export type GoogleStreetViewPresence = Presence<

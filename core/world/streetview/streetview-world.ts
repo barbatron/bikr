@@ -45,7 +45,10 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
   }
 
   toWorldData(routePresence: RoutePresence): GoogleStreetViewPresenceWorldData {
-    return { routePresence };
+    // Prefer junctionInfo from next route point so that maneuver instructions are presented when closing in on a junction
+    const junctionInfo = routePresence?.nextRoutePoint?.junctionInfo ??
+      routePresence?.routePoint.junctionInfo;
+    return { routePresence, junctionInfo };
   }
 
   createPresence() {
@@ -86,7 +89,6 @@ export class StreetViewWorld implements World<GoogleStreetViewPresence> {
 
   private handleMovement(movement: Movement) {
     const presence = this.presenceSource.value; // Hacky
-
     console.log("[sv] handleMovement", { presence, movement });
 
     const routePresence = this.route.queryPresence(movement.total.meters);
