@@ -119,3 +119,53 @@ export function gmRouteToJunctions(
   }
   return junctions;
 }
+
+export function gmRouteToJson(
+  result: google.maps.DirectionsResult,
+): string {
+  const jsonResult = {
+    ...result,
+    routes: result.routes.map((r) => ({
+      ...r,
+      bounds: r.bounds?.toJSON(),
+      legs: r.legs.map((l) => ({
+        ...l,
+        start_location: l.start_location.toJSON(),
+        end_location: l.end_location.toJSON(),
+        steps: l.steps.map((s) => ({
+          ...s,
+          start_location: s.start_location.toJSON(),
+          end_location: s.end_location.toJSON(),
+        })),
+      })),
+    })),
+  };
+  return JSON.stringify(jsonResult, null, 2);
+}
+
+export function gmRouteFromJson(
+  json: string,
+) {
+  const obj = JSON.parse(json);
+  const routes = obj.routes.map((r: any) => ({
+    ...r,
+    bounds: new google.maps.LatLngBounds(
+      r.bounds.southwest,
+      r.bounds.northeast,
+    ),
+    legs: r.legs.map((l: any) => ({
+      ...l,
+      start_location: new google.maps.LatLng(l.start_location),
+      end_location: new google.maps.LatLng(l.end_location),
+      steps: l.steps.map((s: any) => ({
+        ...s,
+        start_location: new google.maps.LatLng(s.start_location),
+        end_location: new google.maps.LatLng(s.end_location),
+      })),
+    })),
+  }));
+  return {
+    ...obj,
+    routes,
+  };
+}

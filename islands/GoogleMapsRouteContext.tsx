@@ -6,7 +6,10 @@ import { worldSource } from "../core/session-main.ts";
 import {
   GoogleMapsRouteTracker,
 } from "../core/world/streetview/gm-route-tracker.ts";
-import { StreetViewWorld } from "../core/world/streetview/index.ts";
+import {
+  gmRouteToJson,
+  StreetViewWorld,
+} from "../core/world/streetview/index.ts";
 import {
   gmRouteToJunctions,
   noLinksResolver,
@@ -113,8 +116,17 @@ export default function GoogleMapsRouteContext(
   useEffect(() => {
     if (value.status !== "loaded") return;
     console.log("[gmrc] Route loaded");
-    // const sv = new google.maps.StreetViewService();
-    // const linkResolver = createMapsApiLinksResolver(sv);
+
+    void fetch("/route", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: gmRouteToJson(value.directionsResult),
+    }).then(() => {
+      console.log("[gmrc] Route sent to server");
+    });
+
     const linkResolver = noLinksResolver;
     const junctions = gmRouteToJunctions(value.directionsResult.routes[0]);
     const routeTracker = new GoogleMapsRouteTracker(junctions);
@@ -125,7 +137,7 @@ export default function GoogleMapsRouteContext(
         linkResolver,
       }),
     );
-  });
+  }, [value.status]);
 
   return (
     <googleMapsRouteContext.Provider value={value}>
