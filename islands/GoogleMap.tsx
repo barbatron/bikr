@@ -25,6 +25,8 @@ import { googleMapsRouteContext } from "./GoogleMapsRouteContext.tsx";
 const posToStr = ({ lat, lng }: LatLong) =>
   `(${[lat, lng].map((x) => x?.toFixed(5).padStart(10)).join(", ")})`;
 
+const animatePov = false;
+
 export type GoogleMapProps = {
   mapId: string;
   zoomLevel: number;
@@ -170,8 +172,15 @@ export default function GoogleMap(
     // Update panorama, if exists
     if (panorama) {
       const p = panorama as google.maps.StreetViewPanorama;
-      p.setPosition(tripPosLatLng);
-      animatePanoPov();
+      if (animatePov) {
+        p.setPosition(tripPosLatLng);
+        animatePanoPov();
+      } else {
+        p.setOptions({
+          position: tripPosLatLng,
+          pov: { heading: tripDirection, pitch: 0 },
+        });
+      }
     } else console.warn("Could not set panorama position/pov");
   }, [tripPosLatLng, tripDirection, map]);
 
