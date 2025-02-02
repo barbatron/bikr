@@ -1,12 +1,5 @@
 import type { Signal } from "@preact/signals-core";
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "preact/hooks";
+import { useContext, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { triggerSpeed } from "../core/bike-telemetry.ts";
 import {
   presence,
