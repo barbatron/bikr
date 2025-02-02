@@ -249,6 +249,8 @@ export default function GoogleMap(
             pano: {panoStr ?? "???"}
           </span>
 
+          <div style={{ flexGrow: 1 }} />
+
           <button
             class="bg-gray-700"
             style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
