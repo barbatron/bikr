@@ -145,14 +145,11 @@ export function gmRouteToRoutePoints(
     )
   );
   const routePoints = allPathPoints.map(pathPointToRoutePoint());
-  for (let i = 0; i < routePoints.length; i++) {
-    console.log(
-      `[gmrt:gmRouteToRoutePoints] RoutePoint ${i.toString().padStart(3)}/${
-        routePoints.length.toString().padStart(3)
-      }`,
-      routePoints[i],
-    );
-  }
+  console.log(
+    `[gmrt:gmRouteToRoutePoints] RoutePoints`,
+    routePoints,
+  );
+
   return routePoints;
 }
 
