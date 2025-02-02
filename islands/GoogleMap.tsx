@@ -15,6 +15,7 @@ import {
 } from "../core/world/streetview/index.ts";
 import { useObservable } from "../hooks/useObservable.ts";
 import { googleMapsRouteContext } from "./GoogleMapsRouteContext.tsx";
+import { GoogleStreetViewPresenceWorldData } from "../core/world/streetview/types.ts";
 
 const posToStr = (pos: LatLong) =>
   // @ts-ignore - we know it's a number array
@@ -244,64 +245,94 @@ export default function GoogleMap(
 
   return (
     <div class="flex flex-col" style={{ height: "100vh" }}>
-      <div
-        id="status"
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          fontSize: "0.75em",
-          fontFamily: "monospace",
-          color: "white",
-        }}
-      >
-        <span style={{ margin: "0.5em", minWidth: "20em" }}>
-          {"trip_pos: "}
-          {posToStr(trip.position)}
-        </span>
-        <span style={{ margin: "0.5em", minWidth: "20em" }}>
-          map_pos: {mapPos}
-        </span>
-
-        <span style={{ margin: "0.5em", minWidth: "10em" }}>
-          speed: {/*speed.toFixed(1)*/ "???"}
-        </span>
-
-        <span style={{ margin: "0.5em", minWidth: "10em" }}>
-          dir: {trip.heading.degrees.toFixed(2)}
-        </span>
-
-        <span style={{ margin: "0.5em" }}>
-          dirs: {streetViewLinks?.value.map((l) => {
-            const fmt = closestLink?.link.pano == l.pano ? "oblique" : "normal";
-            return (
-              <span
-                key={l.pano ?? ""}
-                style={{ marginRight: "0.5em", fontStyle: fmt }}
-              >
-                {(l.heading ?? -1).toFixed(2).padEnd(8)}
-              </span>
-            );
-          })}
-        </span>
-
-        <span style={{ margin: "0.5em", minWidth: "10em" }}>
-          pano: {panoStr ?? "???"}
-        </span>
-
-        <button
-          class="bg-gray-700"
-          style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
-          onClick={() => void triggerSpeed(5)}
+      <div>
+        <div
+          id="status"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            fontSize: "0.75em",
+            fontFamily: "monospace",
+            color: "white",
+          }}
         >
-          5 kph
-        </button>
-        <button
-          class="bg-gray-700"
-          style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
-          onClick={() => void triggerSpeed(40)}
-        >
-          40 kph
-        </button>
+          <span style={{ margin: "0.5em", minWidth: "20em" }}>
+            {"trip_pos: "}
+            {posToStr(trip.position)}
+          </span>
+          <span style={{ margin: "0.5em", minWidth: "20em" }}>
+            map_pos: {mapPos}
+          </span>
+
+          <span style={{ margin: "0.5em", minWidth: "10em" }}>
+            speed: {/*speed.toFixed(1)*/ "???"}
+          </span>
+
+          <span style={{ margin: "0.5em", minWidth: "10em" }}>
+            dir: {trip.heading.degrees.toFixed(2)}
+          </span>
+
+          <span style={{ margin: "0.5em" }}>
+            dirs: {streetViewLinks?.value.map((l) => {
+              const fmt = closestLink?.link.pano == l.pano
+                ? "oblique"
+                : "normal";
+              return (
+                <span
+                  key={l.pano ?? ""}
+                  style={{ marginRight: "0.5em", fontStyle: fmt }}
+                >
+                  {(l.heading ?? -1).toFixed(2).padEnd(8)}
+                </span>
+              );
+            })}
+          </span>
+
+          <span style={{ margin: "0.5em", minWidth: "10em" }}>
+            pano: {panoStr ?? "???"}
+          </span>
+
+          <button
+            class="bg-gray-700"
+            style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
+            onClick={() => void triggerSpeed(5)}
+          >
+            5 kph
+          </button>
+          <button
+            class="bg-gray-700"
+            style={{ justifySelf: "end", margin: "0.5em", minWidth: "10em" }}
+            onClick={() => void triggerSpeed(40)}
+          >
+            40 kph
+          </button>
+        </div>
+        <div>
+          <div
+            class="route-status"
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              fontSize: "0.75em",
+              fontFamily: "monospace",
+              color: "white",
+            }}
+          >
+            {"junctionInfo" in trip.world
+              ? (
+                <span
+                  style={{ margin: "0.5em", minWidth: "20em" }}
+                  dangerouslySetInnerHTML={{
+                    __html: (trip
+                      .world as GoogleStreetViewPresenceWorldData).junctionInfo
+                      ?.htmlInstructions ?? "",
+                  }}
+                >
+                </span>
+              )
+              : null}
+          </div>
+        </div>
       </div>
 
       {streetView
