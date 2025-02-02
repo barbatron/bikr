@@ -35,3 +35,39 @@ export interface World<TPresence extends Presence> {
   createPresence: () => Observable<TPresence>;
   consume(movements: Observable<Movement>): void;
 }
+
+export type RoutePresence<TPos, THeading> =
+  & Pick<
+    Presence<
+      TPos,
+      THeading
+    >,
+    "position" | "heading"
+  >
+  & {
+    routePoint: RoutePoint<TPos>;
+    nextRoutePoint: RoutePoint<TPos> | undefined;
+    routePointIndex: number;
+  };
+
+export interface RouteLike<TPos, THeading> {
+  getInitialPresence(): { position: TPos; heading: THeading };
+  queryPresence(
+    totalDistance: number,
+  ): RoutePresence<TPos, THeading> | undefined;
+}
+export type RelAbs = { relative: number; absolute: number };
+
+export type JunctionInfo = {
+  maneuver?: string;
+  htmlInstructions?: string;
+};
+
+export type RoutePoint<TPos> = {
+  totalDistance: number;
+  position: TPos;
+  headingIn: RelAbs | undefined;
+  headingOut: RelAbs | undefined;
+  distanceToNext: number | undefined;
+  junctionInfo: JunctionInfo | undefined;
+};
