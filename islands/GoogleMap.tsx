@@ -84,7 +84,8 @@ export default function GoogleMap(
       mapId,
       colorScheme: google.maps.ColorScheme.DARK,
       streetViewControl: false,
-      ...(hasRoute && { tilt: 75 }),
+      // Create a tilted navigation-style map if there's a route to follow
+      ...(hasRoute && { tilt: 80 }),
     });
 
     if (hasRoute) {
@@ -119,7 +120,7 @@ export default function GoogleMap(
         heading: tripDirection,
         pitch: 0,
       },
-
+      fullscreenControl: false,
       clickToGo: false,
       addressControl: false,
     };
@@ -133,79 +134,6 @@ export default function GoogleMap(
     );
     map.setStreetView(newPanorama);
     setPanorama(newPanorama);
-
-    function handleNewLinks(
-      this: google.maps.StreetViewPanorama,
-    ) {
-      const links = toValidLinks(this.getLinks());
-      const bestLink = findClosestDirection(tripDirection, links);
-      console.log("Got new links", {
-        headings: links.map((l) => l.heading),
-        currentHeading: this.getPov().heading,
-        bestLink: bestLink?.link.heading,
-        minDiff: bestLink?.minDiff,
-      });
-      if (streetViewLinks) streetViewLinks.value = links;
-    }
-
-    function handlePanoPresenceUpdate(this: google.maps.StreetViewPanorama) {
-      const pos = this.getPosition();
-      if (!pos?.lat() || !pos?.lng()) {
-        console.warn("[gm] Pano aint got position!");
-        return;
-      }
-      const pov = this.getPov();
-      setPanoStr(this.getPano());
-      // Check if same as trip position and heading
-      const tripPos = tripPosLatLng;
-      const tripDir = tripDirection;
-      const posDiff = getPreciseDistance(tripPos, pos.toJSON());
-      const dirDiff = pov.heading - tripDir;
-      console.log(
-        "[gm] Pano pos/pov updated",
-        JSON.stringify({
-          lat: pos.lat().toFixed(5),
-          lng: pos.lng().toFixed(5),
-          pov_heading: pov.heading.toFixed(1),
-          pos_diff: posDiff.toFixed(5),
-          dir_diff: dirDiff.toFixed(1),
-        }),
-      );
-
-      if (posDiff < 0.5 && Math.abs(dirDiff) < 0.1) {
-        console.log("[gm] Pano position matches trip position", {
-          posDiff,
-          dirDiff,
-        });
-        return;
-      }
-      // Update presence based on pano
-      // const newPresence = {
-      //   position: [pos.lat(), pos.lng()],
-      //   heading: { degrees: pov.heading },
-      // } satisfies Presence;
-      // console.log("[gm] Updating presence from pano", { trip, newPresence });
-      // presence.next(newPresence);
-    }
-
-    const listeners = [
-      newPanorama.addListener(
-        "links_changed",
-        handleNewLinks,
-      ),
-      newPanorama.addListener(
-        "position_changed",
-        handlePanoPresenceUpdate,
-      ),
-      newPanorama.addListener(
-        "pov_changed",
-        handlePanoPresenceUpdate,
-      ),
-    ];
-    return () => {
-      console.log("Unsubbing from pano events");
-      listeners.forEach((l) => l.remove());
-    };
   }, [map, panoRef.current]);
 
   // Update map+panorama based on trip position and heading
@@ -221,7 +149,6 @@ export default function GoogleMap(
     m.setHeading(tripDirection);
 
     // Update panorama, if exists
-    const panorama = m.getStreetView();
     if (panorama) {
       const p = panorama as google.maps.StreetViewPanorama;
       p.setOptions({
