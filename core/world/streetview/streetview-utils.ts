@@ -138,11 +138,7 @@ const pathPointToRoutePoint = () => {
         : undefined,
       junctionInfo,
     };
-    totalDistanceAccumulator.totalDistance += google.maps.geometry.spherical
-      .computeDistanceBetween(
-        prevPathPoint ?? position,
-        position,
-      );
+    totalDistanceAccumulator.totalDistance += distanceToNext ?? 0;
     return routePoint;
   };
 };
