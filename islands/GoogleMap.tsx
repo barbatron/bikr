@@ -73,7 +73,7 @@ export default function GoogleMap(
     null | google.maps.StreetViewPanorama
   >(null);
 
-  const [panoStr, setPanoStr] = useState<string | null>(null);
+  const [panoStr, setPanoStr] = useState<string>("OK");
 
   // Map initialization
   useEffect(() => {
@@ -135,8 +135,18 @@ export default function GoogleMap(
       panoRef.current,
       settings,
     );
+    const panoListener = newPanorama.addListener(
+      "position_changed",
+      function handlePositionChanged() {
+        const pano = newPanorama.getPano();
+        const status = newPanorama.getStatus();
+        console.log("[gm] Pano changed", { pano, status });
+        setPanoStr(status);
+      },
+    );
     map.setStreetView(newPanorama);
     setPanorama(newPanorama);
+    return () => panoListener.remove();
   }, [map, panoRef.current]);
 
   const [povDiff, setPovDiff] = useState<number | null>(null);
@@ -292,7 +302,11 @@ export default function GoogleMap(
       {streetView
         ? (
           <div
-            style={{ height: "70vh" }}
+            style={{
+              height: "70vh",
+              maxHeight: panoStr === "OK" ? "70vh" : 0,
+              transition: "max-height 0.5s ease-out",
+            }}
             ref={panoRef}
             id="pano"
           />
