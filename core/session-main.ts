@@ -4,19 +4,20 @@ import { filter } from "rxjs";
 import { speedSourceKph } from "./bike-telemetry.ts";
 import { AngleDegrees, LatLong, Movement, Presence, World } from "./types.ts";
 import { TestWorld } from "./world/test-world.ts";
+import routes from "./routes.json" with { type: "json" };
+import { GoogleLatLngAny } from "./world/streetview/types.ts";
 
-// deno-lint-ignore no-unused-vars
-const flatenStart = { pos: { lat: 59.2618299, lng: 18.1304439 }, dir: 90 };
-const nackaStart = { pos: { lat: 59.2849298, lng: 18.180308 }, dir: 270 };
+type SomeFuckingPositionStopComplaining = GoogleLatLngAny | [number, number];
+type SomeFuckingRouteStopComplaining = [
+  SomeFuckingPositionStopComplaining,
+  SomeFuckingPositionStopComplaining,
+];
 
-export const bikeRoute = {
-  routeStart: "Château Rouquette-sur-Mer",
-  routeEnd: "Domaine de la Pierre Droite",
-};
+export const bikeRoute: SomeFuckingRouteStopComplaining =
+  routes["Saint-Germain-du-Seudre"];
 
-// TODO: Remove these
-export const startPosition = nackaStart.pos;
-export const startDirection = nackaStart.dir;
+export const startPosition = { lat: 0, lng: 0 };
+export const startDirection = 0;
 
 const distanceSource = speedSourceKph.pipe(
   timeInterval(), // Get time since last emit

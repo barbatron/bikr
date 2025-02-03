@@ -62,9 +62,15 @@ export default function GoogleMapsRouteContext(
     if (value.status !== "loading") return; // TODO: Test helper, remove
     const svc = new google.maps.DirectionsService();
     let cancelled = false;
+    const origin = Array.isArray(startAt)
+      ? { lat: startAt[0], lng: startAt[1] }
+      : startAt;
+    const destination = Array.isArray(endAt)
+      ? { lat: endAt[0], lng: endAt[1] }
+      : endAt;
     svc.route({
-      origin: startAt,
-      destination: endAt,
+      origin,
+      destination,
       travelMode: google.maps.TravelMode.BICYCLING,
     }, function (result, status) {
       if (cancelled) return;

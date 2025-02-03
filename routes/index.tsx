@@ -39,8 +39,8 @@ export default function Home() {
       apiKey={API_KEY}
     >
       <GoogleMapsRouteContext
-        startAt={bikeRoute.routeStart.pos}
-        endAt={bikeRoute.routeEnd}
+        startAt={bikeRoute[0]}
+        endAt={bikeRoute[1]}
       >
         <GoogleMap
           mapId={MAP_ID}
