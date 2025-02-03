@@ -179,10 +179,11 @@ export default function GoogleMap(
         p.setPosition(tripPosLatLng);
         animatePanoPov();
       } else {
-        p.setOptions({
-          position: tripPosLatLng,
-          pov: { heading: tripDirection, pitch: 0 },
-        });
+        p.setPosition(tripPosLatLng);
+        setTimeout(
+          () => void p.setPov({ heading: tripDirection, pitch: 0 }),
+          100,
+        );
       }
     } else console.warn("Could not set panorama position/pov");
   }, [tripPosLatLng, tripDirection, map]);
